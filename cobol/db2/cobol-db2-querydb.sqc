@@ -1,0 +1,365 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. QUERYDB.
+       AUTHOR. ANnalisa.
+      
+       ENVIRONMENT DIVISION.
+       
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+      *****************************************************
+      *            WORKING STORAGE SECTION                *
+      *****************************************************
+       01 WS-CURSOR-NAME                 PIC X(30).
+       01 COSTANTI.
+          03 LT-THIS-PROGRAM             PIC X(8) VALUE 'QUERYDB'.
+       01 HA-JOIN-RESULTS.
+          05 HA-NOME                   PIC X(30).
+          05 HA-NOME-POSIZIONE         PIC X(20).
+          05 HA-NOME-DIPARTIMENTO      PIC X(15).
+          05 HA-STIPENDIO-BASE         PIC S9(6)V99 COMP-3.
+      
+      *****************************************************
+      *        SQL COMMUNICATIONS AREA                    *
+      *****************************************************
+       EXEC SQL INCLUDE SQLCA            END-EXEC.
+      
+      *****************************************************
+      *               COPY UT61IF                         *
+      *****************************************************
+       EXEC SQL INCLUDE UT61IF           END-EXEC.
+      
+      *****************************************************
+      *      AREA DELLE CONDIZIONI DI WHERE CONDITION     *
+      *****************************************************
+       01 COMODI-SQL.
+          05 WS-VOLTE-FETCH              PIC S9(9) VALUE ZERO COMP-3.
+          05 WS-RIGHE-RIMASTE            PIC S9(9) VALUE ZERO COMP-3.
+          05 I                           PIC S9(04) COMP.
+       
+       01 WS-AREA-WHERE-CONDITION        PIC X(300).
+       01 WS-AREA-WHERE-CONDITION-R REDEFINES WS-AREA-WHERE-CONDITION.
+          05 WS-COD-DIPARTIMENTO         PIC X(04).
+          05 WS-NOME-POSIZIONE           PIC X(30).
+          05 WS-NOME-DIPENDENTE          PIC X(50).
+          05 WS-DATA-ASSUNZIONE          PIC X(10).
+          05 FILLER                      PIC X(206).
+      
+      *****************************************************
+      *            INCLUDE TABELLE                        *
+      *****************************************************
+      
+      *--------------------------------------------*
+      * tabella DIPARTIMENTI                       *
+      *--------------------------------------------*
+       EXEC SQL INCLUDE DPTTBL            END-EXEC.
+      
+      *--------------------------------------------*
+      * tabella POSIZIONI                          *
+      *--------------------------------------------*
+       EXEC SQL INCLUDE POSTBL            END-EXEC.
+      
+      *--------------------------------------------*
+      * tabella DIPENDENTI                         *
+      *--------------------------------------------*
+       EXEC SQL INCLUDE DIPTBL            END-EXEC.
+      
+       EXEC SQL BEGIN DECLARE SECTION     END-EXEC.
+       
+       01 VARIABILI-APPO.
+          05 HV-LEN1                     PIC S9(3) COMP.
+          05 HV-ID-DIPARTIMENTO          PIC S9(4) COMP.
+          05 HV-ID-POSIZIONE             PIC S9(4) COMP.
+          05 HV-ROWS-FETCHED             PIC S9(4) COMP.
+      
+       EXEC SQL END DECLARE SECTION       END-EXEC.
+      
+      *****************************************************
+      *              LINKAGE SECTION                      *
+      *****************************************************
+       LINKAGE SECTION.
+      
+      *****************************************************
+      *              PROCEDURE DIVISION                   *
+      *****************************************************
+       PROCEDURE DIVISION.
+       
+       A0000-MAIN SECTION.
+           PERFORM A0100-INIT
+           PERFORM A0200-PROCESS
+           PERFORM A0300-TERM
+           GOBACK.
+           
+       A0000-MAIN-EXIT.
+           EXIT.
+
+       A0100-INIT SECTION.
+           DISPLAY "INIZIO PROGRAMMA"
+           MOVE ZERO TO WS-VOLTE-FETCH
+           MOVE ZERO TO WS-RIGHE-RIMASTE
+           MOVE 0 TO HV-ROWS-FETCHED
+           
+           EXEC SQL
+               WHENEVER SQLERROR GOTO A9000-SQL-ERROR
+           END-EXEC.
+           
+       A0100-INIT-EXIT.
+           EXIT.
+
+       A0200-PROCESS SECTION.
+           DISPLAY "PROCESSO PRINCIPALE"
+           
+           PERFORM B0100-QUERY-DIPARTIMENTI
+           PERFORM B0200-QUERY-POSIZIONI
+           PERFORM B0300-QUERY-DIPENDENTI
+           PERFORM B0400-QUERY-JOIN.
+           
+       A0200-PROCESS-EXIT.
+           EXIT.
+           
+       A0300-TERM SECTION.
+           DISPLAY "FINE PROGRAMMA"
+           
+       A0300-TERM-EXIT.
+           EXIT.
+           
+       B0100-QUERY-DIPARTIMENTI SECTION.
+           DISPLAY "LETTURA DIPARTIMENTI"
+           
+           PERFORM B0110-OPEN-CURSOR-DEPT
+           PERFORM B0120-FETCH-DEPT-ROW UNTIL WS-VOLTE-FETCH = 0
+           PERFORM B0130-CLOSE-CURSOR-DEPT
+           
+       B0100-QUERY-DIPARTIMENTI-EXIT.
+           EXIT.
+
+       B0110-OPEN-CURSOR-DEPT SECTION.
+           EXEC SQL
+               DECLARE CUR_DEPT CURSOR FOR
+               SELECT ID_DIPARTIMENTO, NOME_DIPARTIMENTO
+               FROM DIPARTIMENTI
+               ORDER BY NOME_DIPARTIMENTO
+           END-EXEC
+           
+           EXEC SQL
+               OPEN CUR_DEPT
+           END-EXEC
+           
+       B0110-OPEN-CURSOR-DEPT-EXIT.
+           EXIT.
+           
+       B0120-FETCH-DEPT-ROW SECTION.
+           EXEC SQL
+               FETCH CUR_DEPT
+               INTO :HA-DIPARTIMENTI
+           END-EXEC
+           
+           IF SQLCODE = 100
+               MOVE 0 TO WS-VOLTE-FETCH
+           ELSE
+               DISPLAY "ID: " HA-ID-DIPARTIMENTO 
+                     " - NOME: " HA-NOME-DIPARTIMENTO
+               ADD 1 TO WS-VOLTE-FETCH
+           END-IF
+           
+       B0120-FETCH-DEPT-ROW-EXIT.
+           EXIT.
+       
+       B0130-CLOSE-CURSOR-DEPT SECTION.
+           EXEC SQL
+               CLOSE CUR_DEPT
+           END-EXEC
+           
+       B0130-CLOSE-CURSOR-DEPT-EXIT.
+           EXIT.
+
+       B0200-QUERY-POSIZIONI SECTION.
+           DISPLAY "LETTURA POSIZIONI"
+           
+           PERFORM B0210-OPEN-CURSOR-POS
+           PERFORM B0220-FETCH-POS-ROW UNTIL WS-VOLTE-FETCH = 0
+           PERFORM B0230-CLOSE-CURSOR-POS
+           
+       B0200-QUERY-POSIZIONI-EXIT.
+           EXIT.
+
+       B0210-OPEN-CURSOR-POS SECTION.
+           EXEC SQL
+               DECLARE CUR_POS CURSOR FOR
+               SELECT ID_POSIZIONE, NOME_POSIZIONE, STIPENDIO_BASE, 
+                      ID_DIPARTIMENTO
+               FROM POSIZIONI
+               ORDER BY NOME_POSIZIONE
+           END-EXEC
+           
+           EXEC SQL
+               OPEN CUR_POS
+           END-EXEC
+                   
+           MOVE 1 TO WS-VOLTE-FETCH
+           
+       B0210-OPEN-CURSOR-POS-EXIT.
+           EXIT.
+           
+       B0220-FETCH-POS-ROW SECTION.
+           EXEC SQL
+               FETCH CUR_POS
+               INTO :HA-POSIZIONI
+           END-EXEC 
+                     
+           IF SQLCODE = 100
+               MOVE 0 TO WS-VOLTE-FETCH
+           ELSE
+               DISPLAY "ID: " HA-ID-POSIZIONE 
+                     " - NOME: " HA-NOME-POSIZIONE
+                     " - STIPENDIO: " HA-STIPENDIO-BASE
+                     " - DIPARTIMENTO: " HA-ID-DIPARTIMENTO
+               ADD 1 TO WS-VOLTE-FETCH
+           END-IF
+           
+       B0220-FETCH-POS-ROW-EXIT.
+           EXIT.
+       
+       B0230-CLOSE-CURSOR-POS SECTION.
+           EXEC SQL
+               CLOSE CUR_POS
+           END-EXEC
+           
+       B0230-CLOSE-CURSOR-POS-EXIT.
+           EXIT.
+
+       B0300-QUERY-DIPENDENTI SECTION.
+           DISPLAY "LETTURA DIPENDENTI"
+           
+           PERFORM B0310-OPEN-CURSOR-DIP
+           PERFORM B0320-FETCH-DIP-ROW UNTIL WS-VOLTE-FETCH = 0
+           PERFORM B0330-CLOSE-CURSOR-DIP
+           
+       B0300-QUERY-DIPENDENTI-EXIT.
+           EXIT.
+
+       B0310-OPEN-CURSOR-DIP SECTION.
+           EXEC SQL
+               DECLARE CUR_DIP CURSOR FOR
+               SELECT ID_DIPENDENTE, NOME, ID_POSIZIONE, DATA_ASSUNZIONE
+               FROM DIPENDENTI
+               ORDER BY NOME
+           END-EXEC
+           
+           EXEC SQL
+               OPEN CUR_DIP
+           END-EXEC
+           
+           MOVE 1 TO WS-VOLTE-FETCH
+           
+       B0310-OPEN-CURSOR-DIP-EXIT.
+           EXIT.
+           
+       B0320-FETCH-DIP-ROW SECTION.
+           EXEC SQL
+               FETCH CUR_DIP
+               INTO :HA-DIPENDENTI
+           END-EXEC
+           
+           IF SQLCODE = 100
+               MOVE 0 TO WS-VOLTE-FETCH
+           ELSE
+               DISPLAY "ID: " HA-ID-DIPENDENTE 
+                     " - NOME: " HA-NOME
+                     " - POSIZIONE: " HA-ID-POSIZIONE
+                     " - ASSUNZIONE: " HA-DATA-ASSUNZIONE
+               ADD 1 TO WS-VOLTE-FETCH
+           END-IF
+           
+       B0320-FETCH-DIP-ROW-EXIT.
+           EXIT.
+       
+       B0330-CLOSE-CURSOR-DIP SECTION.
+           EXEC SQL
+               CLOSE CUR_DIP
+           END-EXEC
+           
+       B0330-CLOSE-CURSOR-DIP-EXIT.
+           EXIT.
+
+       B0400-QUERY-JOIN SECTION.
+           DISPLAY "LETTURA JOIN TRA TABELLE"
+           
+           PERFORM B0410-OPEN-CURSOR-JOIN
+           PERFORM B0420-FETCH-JOIN-ROW UNTIL WS-VOLTE-FETCH = 0
+           PERFORM B0430-CLOSE-CURSOR-JOIN
+           
+       B0400-QUERY-JOIN-EXIT.
+           EXIT.
+
+       B0410-OPEN-CURSOR-JOIN SECTION.
+           EXEC SQL
+               DECLARE CUR_JOIN CURSOR FOR
+               SELECT D.NOME, P.NOME_POSIZIONE, DP.NOME_DIPARTIMENTO,
+                      P.STIPENDIO_BASE
+               FROM DIPENDENTI D
+               JOIN POSIZIONI P ON D.ID_POSIZIONE = P.ID_POSIZIONE
+               JOIN DIPARTIMENTI DP ON P.ID_DIPARTIMENTO = DP.ID_DIPARTIMENTO
+               ORDER BY DP.NOME_DIPARTIMENTO, P.NOME_POSIZIONE, D.NOME
+           END-EXEC
+           
+           EXEC SQL
+               OPEN CUR_JOIN
+           END-EXEC
+           
+           MOVE 1 TO WS-VOLTE-FETCH
+           
+       B0410-OPEN-CURSOR-JOIN-EXIT.
+           EXIT.
+           
+       B0420-FETCH-JOIN-ROW SECTION.
+           EXEC SQL
+               FETCH CUR_JOIN
+               INTO :HA-JOIN-RESULTS.HA-NOME, 
+                    :HA-JOIN-RESULTS.HA-NOME-POSIZIONE, 
+                    :HA-JOIN-RESULTS.HA-NOME-DIPARTIMENTO, 
+                    :HA-JOIN-RESULTS.HA-STIPENDIO-BASE
+           END-EXEC
+           
+           IF SQLCODE = 100
+               MOVE 0 TO WS-VOLTE-FETCH
+           ELSE
+               DISPLAY "DIPENDENTE: " HA-JOIN-RESULTS.HA-NOME 
+                     " - POSIZIONE: " HA-JOIN-RESULTS.HA-NOME-POSIZIONE
+                     " - DIPARTIMENTO: " HA-JOIN-RESULTS.HA-NOME-DIPARTIMENTO
+                     " - STIPENDIO: " HA-JOIN-RESULTS.HA-STIPENDIO-BASE
+               ADD 1 TO WS-VOLTE-FETCH
+           END-IF
+           
+       B0420-FETCH-JOIN-ROW-EXIT.
+           EXIT.
+       
+       B0430-CLOSE-CURSOR-JOIN SECTION.
+           EXEC SQL
+               CLOSE CUR_JOIN
+           END-EXEC
+           
+       B0430-CLOSE-CURSOR-JOIN-EXIT.
+           EXIT.
+
+       A9000-SQL-ERROR SECTION.
+           DISPLAY "ERRORE SQL"
+           DISPLAY "SQLCODE: " SQLCODE
+           DISPLAY "SQLERRM: " SQLERRM
+           
+           MOVE SQLCODE TO HV-ID-POSIZIONE
+           DISPLAY "ERRORE NEL PROGRAMMA " LT-THIS-PROGRAM
+                   " CON CODICE " HV-ID-POSIZIONE
+                   
+           EXEC SQL
+               WHENEVER SQLERROR CONTINUE
+           END-EXEC
+           
+           EXEC SQL
+               ROLLBACK
+           END-EXEC
+           
+           MOVE -1 TO RETURN-CODE
+           GOBACK.
+           
+       A9000-SQL-ERROR-EXIT.
+           EXIT.
