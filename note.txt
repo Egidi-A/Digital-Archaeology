@@ -2,6 +2,14 @@ SQLCA (SQL Communications Area): Area di memoria utilizzata per la comunicazione
 
 IBM Data Server Driver Package: Pacchetto di driver necessario per la connettività a DB2
 
+
+docker build -t cobol-db2:local .
+docker-compose up -d
+docker-compose ps
+docker-compose exec cobol-app bash
+docker-compose exec db2 bash
+
+
 COMANDI DB:
 # Accesso al container DB2
 docker exec -it mydb2 bash

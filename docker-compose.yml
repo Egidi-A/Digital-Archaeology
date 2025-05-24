@@ -1,39 +1,93 @@
 version: '3.8'
 
 services:
-  cobol-app:
-    image: cobol-db2:local
-    container_name: cobol-app
-    volumes:
-      - .:/app
-    depends_on:
-      - db2
-    networks:
-      - cobol-network
-    tty: true
-    stdin_open: true
-
-  db2:
-    image: ibmcom/db2
-    container_name: mydb2
-    privileged: true
+  # Database PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: cobol_postgres
     environment:
-      - LICENSE=accept
-      - DB2INST1_PASSWORD=password
-      - DBNAME=DIPDB
-      - PERSISTENT_HOME=false
-      - ARCHIVE_LOGS=false
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
     ports:
-      - "50000:50000"
+      - "5432:5432"
     volumes:
-      - db2-data:/database
-      - ./db:/tmp/db
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init-databases.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./sql/bank_schema.sql:/docker-entrypoint-initdb.d/02-bank.sql
+      - ./sql/payroll_schema.sql:/docker-entrypoint-initdb.d/03-payroll.sql
+      - ./sql/warehouse_schema.sql:/docker-entrypoint-initdb.d/04-warehouse.sql
     networks:
-      - cobol-network
+      - cobol_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Ambiente COBOL
+  cobol:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cobol-environment:latest
+    container_name: cobol_runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: password
+      COB_PRE_LOAD: pgsql
+    volumes:
+      - ./src:/cobol/src
+      - ./bin:/cobol/bin
+      - ./reports:/cobol/reports
+      - ./scripts:/cobol/scripts
+    networks:
+      - cobol_network
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "
+        echo 'Waiting for PostgreSQL...' &&
+        /cobol/scripts/wait-for-postgres.sh &&
+        echo 'Compiling COBOL programs...' &&
+        /cobol/scripts/compile.sh &&
+        echo 'Environment ready!' &&
+        echo '' &&
+        echo 'Available programs:' &&
+        echo '  1. gestione-conti    - Sistema Gestione Conti Correnti' &&
+        echo '  2. gestione-paghe    - Sistema Gestione Paghe e Stipendi' &&
+        echo '  3. gestione-magazzino - Sistema Gestione Magazzino' &&
+        echo '' &&
+        echo 'Run programs with: ./bin/program-name' &&
+        echo '' &&
+        /bin/bash
+      "
+
+  # pgAdmin (opzionale - per gestione grafica del DB)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cobol_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cobol.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - cobol_network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
 
 networks:
-  cobol-network:
+  cobol_network:
     driver: bridge
 
 volumes:
-  db2-data:
+  postgres_data:
+  pgadmin_data:
