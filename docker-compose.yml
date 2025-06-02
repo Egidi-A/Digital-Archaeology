@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  cobol4j-app:
+    build:
+      context: ./cobol4j-image
+      dockerfile: Dockerfile
+    container_name: cobol4j-app
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+    networks:
+      - cobol4j-network
+    tty: true
+    stdin_open: true
+
+  postgres:
+    image: postgres:13
+    container_name: cobol4j-postgres
+    environment:
+      - POSTGRES_DB=cobol4jdb
+      - POSTGRES_USER=coboluser
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./Fase_1/sql:/docker-entrypoint-initdb.d
+    networks:
+      - cobol4j-network
+
+networks:
+  cobol4j-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
