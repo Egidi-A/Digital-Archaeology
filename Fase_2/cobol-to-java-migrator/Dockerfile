@@ -38,6 +38,9 @@ ENV PYTHONPATH=/app/src
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Imposta permessi corretti
+RUN chmod -R 755 /app
+
 # Volume per i file di input/output
 VOLUME ["/app/input", "/app/output", "/app/logs"]
 

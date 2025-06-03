@@ -22,10 +22,7 @@ class CobolParser:
         self.procedures = {}  # Dizionario per tracciare procedure
         
     def p_program(self, p):
-        """program : identification_division 
-                   environment_division_opt 
-                   data_division_opt 
-                   procedure_division"""
+        """program : identification_division environment_division_opt data_division_opt procedure_division"""
         program_node = p[1]  # identification_division returns ProgramNode
         
         # Aggiungi le altre divisioni come figli
@@ -39,10 +36,7 @@ class CobolParser:
         p[0] = program_node
     
     def p_identification_division(self, p):
-        """identification_division : IDENTIFICATION DIVISION PERIOD
-                                     program_id_paragraph
-                                     author_paragraph_opt
-                                     date_written_paragraph_opt"""
+        """identification_division : IDENTIFICATION DIVISION PERIOD program_id_paragraph author_paragraph_opt date_written_paragraph_opt"""
         program_node = p[4]  # program_id_paragraph returns ProgramNode
         
         if p[5]:  # author
@@ -94,17 +88,17 @@ class CobolParser:
         p[0] = p[1]
     
     def p_environment_division(self, p):
-        """environment_division : ENVIRONMENT DIVISION PERIOD
-                                 input_output_section_opt"""
+        """environment_division : ENVIRONMENT DIVISION PERIOD input_output_section_opt"""
+
         div_node = DivisionNode("ENVIRONMENT", line_number=p.lineno(1))
         if p[4]:
             div_node.add_child(p[4])
         p[0] = div_node
     
     def p_input_output_section_opt(self, p):
-        """input_output_section_opt : INPUT_OUTPUT SECTION PERIOD
-                                     file_control_paragraph_opt
-                                   | empty"""
+        """input_output_section_opt : INPUT_OUTPUT SECTION PERIOD file_control_paragraph_opt
+                           | empty"""
+
         if len(p) > 2:
             section_node = ASTNode(NodeType.SECTION, "INPUT-OUTPUT", 
                                  line_number=p.lineno(1))
@@ -132,8 +126,8 @@ class CobolParser:
             p[0] = p[1]
     
     def p_file_control_entry(self, p):
-        """file_control_entry : SELECT IDENTIFIER ASSIGN TO STRING_LITERAL
-                                organization_clause_opt PERIOD"""
+        """file_control_entry : SELECT IDENTIFIER ASSIGN TO STRING_LITERAL organization_clause_opt PERIOD"""
+
         file_node = FileDefinitionNode(p[2], line_number=p.lineno(1))
         file_node.assign_to = p[5]
         if p[6]:
@@ -160,9 +154,7 @@ class CobolParser:
         p[0] = p[1]
     
     def p_data_division(self, p):
-        """data_division : DATA DIVISION PERIOD
-                          file_section_opt
-                          working_storage_section_opt"""
+        """data_division : DATA DIVISION PERIOD file_section_opt working_storage_section_opt"""
         div_node = DivisionNode("DATA", line_number=p.lineno(1))
         if p[4]:
             div_node.add_child(p[4])
@@ -192,17 +184,16 @@ class CobolParser:
             p[0] = p[1]
     
     def p_file_description(self, p):
-        """file_description : FD IDENTIFIER PERIOD
-                             data_description_entries"""
+        """file_description : FD IDENTIFIER PERIOD data_description_entries"""
+
         fd_node = FileDefinitionNode(p[2], line_number=p.lineno(1))
         for entry in p[4]:
             fd_node.add_child(entry)
         p[0] = fd_node
     
     def p_working_storage_section_opt(self, p):
-        """working_storage_section_opt : WORKING_STORAGE SECTION PERIOD
-                                         data_description_entries
-                                       | empty"""
+        """working_storage_section_opt : WORKING_STORAGE SECTION PERIOD data_description_entries
+                               | empty"""
         if len(p) > 2:
             section_node = ASTNode(NodeType.SECTION, "WORKING-STORAGE", 
                                  line_number=p.lineno(1))
@@ -225,10 +216,9 @@ class CobolParser:
             p[0] = p[1]
     
     def p_data_description_entry(self, p):
-        """data_description_entry : level_number data_name_or_filler 
-                                   picture_clause_opt value_clause_opt 
-                                   occurs_clause_opt PERIOD
-                                 | exec_sql_include"""
+        """data_description_entry : level_number data_name_or_filler picture_clause_opt value_clause_opt occurs_clause_opt PERIOD
+                           | exec_sql_include"""
+
         if len(p) == 2:
             p[0] = p[1]  # exec_sql_include
         else:
@@ -316,8 +306,7 @@ class CobolParser:
         p[0] = sql_node
     
     def p_procedure_division(self, p):
-        """procedure_division : PROCEDURE DIVISION PERIOD
-                               procedure_content"""
+        """procedure_division : PROCEDURE DIVISION PERIOD procedure_content"""
         div_node = DivisionNode("PROCEDURE", line_number=p.lineno(1))
         for item in p[4]:
             div_node.add_child(item)
@@ -371,9 +360,42 @@ class CobolParser:
                     | compute_statement
                     | open_statement
                     | close_statement
-                    | write_statement"""
+                    | write_statement
+                    | string_statement
+                    | exit_statement"""
         p[0] = p[1]
-    
+
+    def p_string_items(self, p):
+        """string_items : string_item
+                        | string_items string_item"""
+        if len(p) == 2:
+            p[0] = [p[1]]
+        else:
+            p[1].append(p[2])
+            p[0] = p[1]
+
+    def p_string_item(self, p):
+        """string_item : IDENTIFIER
+                    | STRING_LITERAL
+                    | IDENTIFIER LPAREN NUMBER COLON NUMBER RPAREN"""
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = f"{p[1]}({p[3]}:{p[5]})"
+
+    def p_string_delimiter(self, p):
+        """string_delimiter : SIZE
+                        | STRING_LITERAL"""
+        p[0] = p[1]
+
+    def p_exit_statement(self, p):
+        """exit_statement : EXIT PARAGRAPH PERIOD
+                        | EXIT PERIOD"""
+        stmt = StatementNode("EXIT", line_number=p.lineno(1))
+        if len(p) == 4:
+            stmt.set_attribute("type", "PARAGRAPH")
+        p[0] = stmt
+
     def p_move_statement(self, p):
         """move_statement : MOVE identifier_or_literal TO identifier_list PERIOD"""
         stmt = StatementNode("MOVE", line_number=p.lineno(1))
@@ -446,10 +468,19 @@ class CobolParser:
         p[0] = stmt
     
     def p_condition(self, p):
-        """condition : IDENTIFIER EQUALS literal
-                    | IDENTIFIER NOT EQUALS literal
-                    | IDENTIFIER GREATER THAN literal
-                    | IDENTIFIER LESS THAN literal"""
+        """condition : simple_condition
+                    | condition OR simple_condition
+                    | condition AND simple_condition"""
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = f"{p[1]} {p[2]} {p[3]}"
+
+    def p_simple_condition(self, p):
+        """simple_condition : IDENTIFIER EQUALS literal
+                        | IDENTIFIER NOT EQUALS literal
+                        | IDENTIFIER GREATER THAN literal
+                        | IDENTIFIER LESS THAN literal"""
         if len(p) == 4:
             p[0] = f"{p[1]} = {p[3]}"
         elif len(p) == 5 and p[2] == "NOT":
@@ -550,8 +581,7 @@ class CobolParser:
         p[0] = f"{p[1]} = {p[3]}"
     
     def p_sql_insert(self, p):
-        """sql_insert : INSERT INTO IDENTIFIER LPAREN column_list RPAREN 
-                       VALUES LPAREN value_list RPAREN"""
+        """sql_insert : INSERT INTO IDENTIFIER LPAREN column_list RPAREN VALUES LPAREN value_list RPAREN"""
         sql_node = SqlStatementNode("INSERT", line_number=p.lineno(1))
         sql_node.table_name = p[3]
         sql_node.sql_text = f"INSERT INTO {p[3]} ({p[5]}) VALUES ({p[9]})"
@@ -846,5 +876,34 @@ class CobolParser:
                 processed_line = processed_line[:66]
             
             processed_lines.append(processed_line.rstrip())
+        
+        return '\n'.join(processed_lines)
+    
+    def _preprocess_cobol_advanced(self, data):
+        """Preprocessa il codice COBOL con gestione avanzata"""
+        lines = data.split('\n')
+        processed_lines = []
+        in_string_statement = False
+        
+        for line in lines:
+            # Gestione base esistente...
+            processed_line = self._preprocess_cobol(line)
+            
+            # Gestione speciale per STRING statements multi-linea
+            if 'STRING' in processed_line and not 'STRING_LITERAL' in processed_line:
+                in_string_statement = True
+            
+            if in_string_statement:
+                # Rimuovi spazi extra nelle string statements
+                processed_line = ' '.join(processed_line.split())
+                if processed_line.endswith('.'):
+                    in_string_statement = False
+            
+            # Gestione underscore nelle query SQL (non sono errori)
+            if 'EXEC SQL' in line or in_sql_block:
+                # Gli underscore sono validi in SQL
+                pass
+            
+            processed_lines.append(processed_line)
         
         return '\n'.join(processed_lines)

@@ -7,7 +7,7 @@ migration:
 type_mappings:
   # Numerici
   "PIC 9": "int"
-  # "PIC 9(n)": "int"  # n <= 9
+  #"PIC 9(n)": "int"  # n <= 9
   "PIC 9(n)": "long"  # n > 9
   "PIC S9": "int"
   "PIC 9V9": "BigDecimal"

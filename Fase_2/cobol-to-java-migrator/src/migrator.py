@@ -11,41 +11,69 @@ import click
 from pathlib import Path
 from loguru import logger
 
-# Aggiungi il path src al PYTHONPATH se necessario
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.dirname(current_dir) if 'src' in current_dir else current_dir
-if src_dir not in sys.path:
-    sys.path.insert(0, src_dir)
+# Setup del PYTHONPATH per Docker
+if '/app/src' not in sys.path:
+    sys.path.insert(0, '/app/src')
+if '/app' not in sys.path:
+    sys.path.insert(0, '/app')
 
-# Import assoluti invece di relativi
+# Import con gestione errori migliorata
+def import_modules():
+    """Importa i moduli necessari con fallback multipli"""
+    modules = {}
+    
+    # Lista di moduli da importare
+    module_imports = [
+        ('src.parser.cobol_parser', 'CobolParser'),
+        ('src.analyzer.data_analyzer', 'DataAnalyzer'),
+        ('src.analyzer.procedure_analyzer', 'ProcedureAnalyzer'),
+        ('src.analyzer.sql_analyzer', 'SqlAnalyzer'),
+        ('src.parser.sql_schema_parser', 'SqlSchemaParser'),
+        ('src.generator.java_generator', 'JavaGenerator'),
+        ('src.generator.gradle_generator', 'GradleGenerator'),
+        ('src.generator.docker_generator', 'DockerGenerator'),
+    ]
+    
+    # Tentativi di import con diversi path
+    import_paths = [
+        lambda mod: __import__(mod, fromlist=[''])
+    ]
+    
+    for module_path, class_name in module_imports:
+        success = False
+        for import_func in import_paths:
+            try:
+                module = import_func(module_path)
+                modules[class_name] = getattr(module, class_name)
+                success = True
+                break
+            except (ImportError, AttributeError) as e:
+                continue
+        
+        if not success:
+            logger.error(f"Impossibile importare {class_name} da {module_path}")
+            raise ImportError(f"Modulo {class_name} non trovato")
+    
+    return modules
+
+# Esegui gli import
 try:
-    from parser.cobol_parser import CobolParser
-    from analyzer.data_analyzer import DataAnalyzer
-    from analyzer.procedure_analyzer import ProcedureAnalyzer
-    from analyzer.sql_analyzer import SqlAnalyzer
-    from parser.sql_schema_parser import SqlSchemaParser
-    from generator.java_generator import JavaGenerator
-    from generator.gradle_generator import GradleGenerator
-    from generator.docker_generator import DockerGenerator
-except ImportError as e:
-    # Fallback per import alternativi
-    try:
-        sys.path.insert(0, '/app/src')
-        from parser.cobol_parser import CobolParser
-        from analyzer.data_analyzer import DataAnalyzer
-        from analyzer.procedure_analyzer import ProcedureAnalyzer
-        from analyzer.sql_analyzer import SqlAnalyzer
-        from parser.sql_schema_parser import SqlSchemaParser
-        from generator.java_generator import JavaGenerator
-        from generator.gradle_generator import GradleGenerator
-        from generator.docker_generator import DockerGenerator
-    except ImportError as e2:
-        print(f"Errore import: {e}")
-        print(f"Errore import fallback: {e2}")
-        print(f"PYTHONPATH: {sys.path}")
-        print(f"Current dir: {current_dir}")
-        print(f"Src dir: {src_dir}")
-        sys.exit(1)
+    imported_modules = import_modules()
+    CobolParser = imported_modules['CobolParser']
+    DataAnalyzer = imported_modules['DataAnalyzer']
+    ProcedureAnalyzer = imported_modules['ProcedureAnalyzer']
+    SqlAnalyzer = imported_modules['SqlAnalyzer']
+    SqlSchemaParser = imported_modules['SqlSchemaParser']
+    JavaGenerator = imported_modules['JavaGenerator']
+    GradleGenerator = imported_modules['GradleGenerator']
+    DockerGenerator = imported_modules['DockerGenerator']
+    logger.info("Tutti i moduli importati con successo")
+except Exception as e:
+    logger.error(f"Errore fatale negli import: {e}")
+    logger.error(f"PYTHONPATH: {sys.path}")
+    logger.error(f"Working directory: {os.getcwd()}")
+    logger.error(f"Files in /app/src: {os.listdir('/app/src') if os.path.exists('/app/src') else 'Directory non esistente'}")
+    sys.exit(1)
 
 
 class CobolToJavaMigrator:
@@ -58,7 +86,8 @@ class CobolToJavaMigrator:
             config_path,
             f"/app/{config_path}",
             f"/app/config/migration-config.yaml",
-            "migration-config.yaml"
+            "migration-config.yaml",
+            "/app/config.yaml"
         ]
         
         config_found = False
@@ -73,19 +102,27 @@ class CobolToJavaMigrator:
             logger.warning("File di configurazione non trovato, uso configurazione di default")
             self.config = self._get_default_config()
         
-        self.parser = CobolParser()
-        self.parser.build()
-        self.sql_schema_parser = SqlSchemaParser()
-        
-        # Inizializza gli analizzatori
-        self.data_analyzer = DataAnalyzer(self.config)
-        self.procedure_analyzer = ProcedureAnalyzer(self.config)
-        self.sql_analyzer = SqlAnalyzer(self.config)
-        
-        # Inizializza i generatori
-        self.java_generator = JavaGenerator(self.config)
-        self.gradle_generator = GradleGenerator(self.config)
-        self.docker_generator = DockerGenerator(self.config)
+        # Inizializza i componenti
+        try:
+            self.parser = CobolParser()
+            self.parser.build()
+            self.sql_schema_parser = SqlSchemaParser()
+            
+            # Inizializza gli analizzatori
+            self.data_analyzer = DataAnalyzer(self.config)
+            self.procedure_analyzer = ProcedureAnalyzer(self.config)
+            self.sql_analyzer = SqlAnalyzer(self.config)
+            
+            # Inizializza i generatori
+            self.java_generator = JavaGenerator(self.config)
+            self.gradle_generator = GradleGenerator(self.config)
+            self.docker_generator = DockerGenerator(self.config)
+            
+            logger.info("Tutti i componenti inizializzati con successo")
+            
+        except Exception as e:
+            logger.error(f"Errore nell'inizializzazione dei componenti: {e}")
+            raise
         
         # Configura logging
         self._setup_logging()
@@ -106,6 +143,11 @@ class CobolToJavaMigrator:
                 'source_encoding': 'UTF-8',
                 'target_java_version': '11'
             },
+            'type_mappings': {
+                'PIC 9': 'int',
+                'PIC X': 'String',
+                'PIC A': 'String'
+            },
             'java': {
                 'package_base': 'com.migrated.app',
                 'use_lombok': True
@@ -122,7 +164,7 @@ class CobolToJavaMigrator:
             },
             'logging': {
                 'level': 'INFO',
-                'file': 'migration.log'
+                'file': '/app/logs/migration.log'
             }
         }
     
@@ -154,6 +196,7 @@ class CobolToJavaMigrator:
                 retention="7 days",
                 level=log_level
             )
+            logger.info(f"Log file configurato: {log_file}")
         except Exception as e:
             logger.warning(f"Impossibile creare file di log {log_file}: {e}")
     
@@ -169,48 +212,85 @@ class CobolToJavaMigrator:
                 return False
             
             # 1. Leggi il file COBOL
-            with open(cobol_file_path, 'r', encoding=self.config['migration']['source_encoding']) as f:
-                cobol_code = f.read()
-            
-            logger.info(f"File COBOL letto: {len(cobol_code)} caratteri")
+            try:
+                with open(cobol_file_path, 'r', encoding=self.config['migration']['source_encoding']) as f:
+                    cobol_code = f.read()
+                logger.info(f"File COBOL letto: {len(cobol_code)} caratteri")
+            except Exception as e:
+                logger.error(f"Errore nella lettura del file COBOL: {e}")
+                return False
             
             # 2. Leggi e parsa lo schema SQL
             sql_schema = None
             if sql_file_path and os.path.exists(sql_file_path):
-                logger.info("Parsing dello schema SQL...")
-                with open(sql_file_path, 'r', encoding='utf-8') as f:
-                    sql_content = f.read()
-                sql_schema = self.sql_schema_parser.parse(sql_content)
+                try:
+                    logger.info("Parsing dello schema SQL...")
+                    with open(sql_file_path, 'r', encoding='utf-8') as f:
+                        sql_content = f.read()
+                    sql_schema = self.sql_schema_parser.parse(sql_content)
+                    logger.info(f"Schema SQL parsato: {len(sql_schema.get('tables', {}))} tabelle trovate")
+                except Exception as e:
+                    logger.warning(f"Errore nel parsing dello schema SQL: {e}")
             else:
                 logger.warning(f"Schema SQL non trovato: {sql_file_path}")
             
             # 3. Parse del codice COBOL
-            logger.info("Parsing del codice COBOL...")
-            ast = self.parser.parse(cobol_code)
-            
-            if not ast:
-                logger.error("Parsing fallito - AST vuoto")
+            try:
+                logger.info("Parsing del codice COBOL...")
+                ast = self.parser.parse(cobol_code, debug=True)
+                
+                if not ast:
+                    logger.error("Parsing fallito - AST vuoto")
+                    return False
+                logger.info("AST COBOL creato con successo")
+            except Exception as e:
+                logger.error(f"Errore nel parsing COBOL: {e}")
                 return False
             
             # 4. Analisi dell'AST con schema SQL
-            logger.info("Analisi dell'AST...")
-            analysis_result = self._analyze_ast(ast, sql_schema)
+            try:
+                logger.info("Analisi dell'AST...")
+                analysis_result = self._analyze_ast(ast, sql_schema)
+                logger.info("Analisi AST completata")
+            except Exception as e:
+                logger.error(f"Errore nell'analisi AST: {e}")
+                return False
             
             # 5. Generazione codice Java
-            logger.info("Generazione codice Java...")
-            java_project = self.java_generator.generate(ast, analysis_result)
+            try:
+                logger.info("Generazione codice Java...")
+                java_project = self.java_generator.generate(ast, analysis_result)
+                logger.info(f"Progetto Java generato: {java_project.get('project_name', 'unknown')}")
+            except Exception as e:
+                logger.error(f"Errore nella generazione Java: {e}")
+                return False
             
             # 6. Generazione struttura Gradle
-            logger.info("Generazione struttura Gradle...")
-            gradle_files = self.gradle_generator.generate(java_project)
+            try:
+                logger.info("Generazione struttura Gradle...")
+                gradle_files = self.gradle_generator.generate(java_project)
+                logger.info(f"File Gradle generati: {len(gradle_files)}")
+            except Exception as e:
+                logger.error(f"Errore nella generazione Gradle: {e}")
+                return False
             
             # 7. Generazione configurazione Docker
-            logger.info("Generazione configurazione Docker...")
-            docker_files = self.docker_generator.generate(java_project)
+            try:
+                logger.info("Generazione configurazione Docker...")
+                docker_files = self.docker_generator.generate(java_project)
+                logger.info(f"File Docker generati: {len(docker_files)}")
+            except Exception as e:
+                logger.error(f"Errore nella generazione Docker: {e}")
+                return False
             
             # 8. Scrittura dei file
-            logger.info(f"Scrittura dei file in: {output_dir}")
-            self._write_output(output_dir, java_project, gradle_files, docker_files)
+            try:
+                logger.info(f"Scrittura dei file in: {output_dir}")
+                self._write_output(output_dir, java_project, gradle_files, docker_files)
+                logger.info("File scritti con successo")
+            except Exception as e:
+                logger.error(f"Errore nella scrittura dei file: {e}")
+                return False
             
             logger.success(f"Migrazione completata con successo!")
             return True
@@ -219,7 +299,7 @@ class CobolToJavaMigrator:
             logger.error(f"Errore durante la migrazione: {str(e)}")
             import traceback
             logger.debug(traceback.format_exc())
-            raise
+            return False
     
     def _analyze_ast(self, ast, sql_schema=None):
         """Esegue l'analisi completa dell'AST"""
@@ -238,22 +318,37 @@ class CobolToJavaMigrator:
             self.sql_analyzer.set_sql_schema(sql_schema)
         
         # Analisi delle strutture dati
-        data_analysis = self.data_analyzer.analyze(ast)
-        result['data_structures'] = data_analysis
+        try:
+            data_analysis = self.data_analyzer.analyze(ast)
+            result['data_structures'] = data_analysis
+            logger.debug("Analisi dati completata")
+        except Exception as e:
+            logger.warning(f"Errore nell'analisi dati: {e}")
+            result['data_structures'] = {'data_items': {}, 'entities': [], 'dtos': []}
         
         # Analisi delle procedure
-        procedure_analysis = self.procedure_analyzer.analyze(ast)
-        result['procedures'] = procedure_analysis
+        try:
+            procedure_analysis = self.procedure_analyzer.analyze(ast)
+            result['procedures'] = procedure_analysis
+            logger.debug("Analisi procedure completata")
+        except Exception as e:
+            logger.warning(f"Errore nell'analisi procedure: {e}")
+            result['procedures'] = {'procedures': {}, 'services': []}
         
         # Analisi SQL
-        sql_analysis = self.sql_analyzer.analyze(ast)
-        result['sql_statements'] = sql_analysis
+        try:
+            sql_analysis = self.sql_analyzer.analyze(ast)
+            result['sql_statements'] = sql_analysis
+            logger.debug("Analisi SQL completata")
+        except Exception as e:
+            logger.warning(f"Errore nell'analisi SQL: {e}")
+            result['sql_statements'] = {'statements': [], 'repositories': []}
         
         # Informazioni generali del programma
         result['program_info'] = {
-            'program_id': ast.program_id if hasattr(ast, 'program_id') else 'Unknown',
-            'author': ast.author if hasattr(ast, 'author') else 'Unknown',
-            'date_written': ast.date_written if hasattr(ast, 'date_written') else 'Unknown'
+            'program_id': getattr(ast, 'program_id', 'Unknown'),
+            'author': getattr(ast, 'author', 'Unknown'),
+            'date_written': getattr(ast, 'date_written', 'Unknown')
         }
         
         return result
@@ -283,46 +378,69 @@ class CobolToJavaMigrator:
         java_src_dir = src_main_java / package_path
         java_src_dir.mkdir(parents=True, exist_ok=True)
         
-        for file_info in java_project['java_files']:
-            file_path = java_src_dir / file_info['package'] / file_info['filename']
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(file_info['content'])
-            logger.info(f"Creato: {file_path}")
+        files_written = 0
+        for file_info in java_project.get('java_files', []):
+            try:
+                file_path = java_src_dir / file_info['package'] / file_info['filename']
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(file_info['content'])
+                logger.info(f"Creato: {file_path}")
+                files_written += 1
+            except Exception as e:
+                logger.error(f"Errore nella scrittura di {file_info['filename']}: {e}")
         
         # Scrivi i file di configurazione Spring
         for file_info in java_project.get('config_files', []):
-            file_path = src_main_resources / file_info['filename']
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(file_info['content'])
-            logger.info(f"Creato: {file_path}")
+            try:
+                file_path = src_main_resources / file_info['filename']
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(file_info['content'])
+                logger.info(f"Creato: {file_path}")
+                files_written += 1
+            except Exception as e:
+                logger.error(f"Errore nella scrittura di {file_info['filename']}: {e}")
         
         # Scrivi i file Gradle
         for file_info in gradle_files:
-            file_path = project_root / file_info['filename']
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(file_info['content'])
-            logger.info(f"Creato: {file_path}")
+            try:
+                file_path = project_root / file_info['filename']
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(file_info['content'])
+                logger.info(f"Creato: {file_path}")
+                files_written += 1
+            except Exception as e:
+                logger.error(f"Errore nella scrittura di {file_info['filename']}: {e}")
         
         # Scrivi i file Docker
         for file_info in docker_files:
-            file_path = project_root / file_info['filename']
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(file_info['content'])
-            logger.info(f"Creato: {file_path}")
+            try:
+                file_path = project_root / file_info['filename']
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(file_info['content'])
+                logger.info(f"Creato: {file_path}")
+                files_written += 1
+            except Exception as e:
+                logger.error(f"Errore nella scrittura di {file_info['filename']}: {e}")
         
         # Crea README
-        readme_content = self._generate_readme(project_name)
-        with open(project_root / 'README.md', 'w', encoding='utf-8') as f:
-            f.write(readme_content)
-        logger.info(f"Creato: {project_root / 'README.md'}")
+        try:
+            readme_content = self._generate_readme(project_name)
+            with open(project_root / 'README.md', 'w', encoding='utf-8') as f:
+                f.write(readme_content)
+            logger.info(f"Creato: {project_root / 'README.md'}")
+            files_written += 1
+        except Exception as e:
+            logger.error(f"Errore nella scrittura README: {e}")
+        
+        logger.info(f"Totale file scritti: {files_written}")
     
     def _generate_readme(self, project_name):
         """Genera un README per il progetto migrato"""
@@ -419,6 +537,10 @@ def main(input_file, schema_file, output_dir, config_file, debug):
 ╚═══════════════════════════════════════════╝
 """, fg='cyan'))
     
+    # Debug info
+    logger.debug(f"PYTHONPATH: {sys.path}")
+    logger.debug(f"Working directory: {os.getcwd()}")
+    
     # Verifica che il file di input esista
     if not os.path.exists(input_file):
         click.echo(click.style(f"❌ File non trovato: {input_file}", fg='red'))
@@ -433,9 +555,9 @@ def main(input_file, schema_file, output_dir, config_file, debug):
     os.makedirs(output_dir, exist_ok=True)
     
     # Esegui la migrazione
-    migrator = CobolToJavaMigrator(config_file)
-    
     try:
+        migrator = CobolToJavaMigrator(config_file)
+        
         click.echo(f"📄 Input: {input_file}")
         if schema_file:
             click.echo(f"🗄️  Schema: {schema_file}")
@@ -444,7 +566,6 @@ def main(input_file, schema_file, output_dir, config_file, debug):
         click.echo("")
         
         with click.progressbar(length=100, label='Migrazione in corso') as bar:
-            # Simula progresso (in produzione useremmo callback reali)
             bar.update(10)
             success = migrator.migrate_file(input_file, schema_file, output_dir)
             bar.update(90)

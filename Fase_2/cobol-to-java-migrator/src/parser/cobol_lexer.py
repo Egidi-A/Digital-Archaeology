@@ -100,6 +100,11 @@ class CobolLexer:
         'SQLCODE': 'SQLCODE',
         'INCLUDE': 'INCLUDE',
         'SQLCA': 'SQLCA',
+        'USER': 'USER',
+        'USING': 'USING',
+        'ORDER': 'ORDER',
+        'DESC': 'DESC',
+        
         
         # File operations
         'ASSIGN': 'ASSIGN',
@@ -145,6 +150,9 @@ class CobolLexer:
         'REPLACING': 'REPLACING',
         'OTHER': 'OTHER',
         'FILLER': 'FILLER',
+        'COLON': 'COLON',
+        'LPAREN': 'LPAREN',
+        'RPAREN': 'RPAREN',
     }
     
     # Lista di tutti i token
@@ -264,7 +272,7 @@ class CobolLexer:
         return t
     
     def t_IDENTIFIER(self, t):
-        r'[A-Za-z][A-Za-z0-9\-]*'
+        r'[A-Za-z][A-Za-z0-9\-]*(?:\([0-9]+:[0-9]+\))?'
         # Converte in maiuscolo per confronto
         upper_value = t.value.upper().replace('_', '-')
         
