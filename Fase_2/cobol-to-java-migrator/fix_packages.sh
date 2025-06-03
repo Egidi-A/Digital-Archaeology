@@ -14,7 +14,7 @@ Root package
 __version__ = '1.0.0'
 EOF
 
-# File __init__.py per analyzer (già esistente, ma assicuriamoci che sia corretto)
+# File __init__.py per analyzer
 cat > src/analyzer/__init__.py << 'EOF'
 """
 COBOL to Java Migration Tool - Analyzer Module
@@ -29,7 +29,7 @@ __all__ = ['DataAnalyzer', 'ProcedureAnalyzer', 'SqlAnalyzer']
 __version__ = '1.0.0'
 EOF
 
-# File __init__.py per generator (già esistente, ma assicuriamoci che sia corretto)
+# File __init__.py per generator
 cat > src/generator/__init__.py << 'EOF'
 """
 COBOL to Java Migration Tool - Generator Module
@@ -44,7 +44,7 @@ __all__ = ['JavaGenerator', 'GradleGenerator', 'DockerGenerator']
 __version__ = '1.0.0'
 EOF
 
-# File __init__.py per parser (già esistente, ma assicuriamoci che sia corretto)
+# File __init__.py per parser
 cat > src/parser/__init__.py << 'EOF'
 """
 COBOL to Java Migration Tool - Parser Module
