@@ -11,25 +11,68 @@ import click
 from pathlib import Path
 from loguru import logger
 
-# Aggiungi il path src al PYTHONPATH
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Aggiungi il path src al PYTHONPATH se necessario
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.dirname(current_dir) if 'src' in current_dir else current_dir
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
 
-from parser.cobol_parser import CobolParser
-from analyzer.data_analyzer import DataAnalyzer
-from analyzer.procedure_analyzer import ProcedureAnalyzer
-from analyzer.sql_analyzer import SqlAnalyzer
-from parser.sql_schema_parser import SqlSchemaParser
-from generator.java_generator import JavaGenerator
-from generator.gradle_generator import GradleGenerator
-from generator.docker_generator import DockerGenerator
+# Import assoluti invece di relativi
+try:
+    from parser.cobol_parser import CobolParser
+    from analyzer.data_analyzer import DataAnalyzer
+    from analyzer.procedure_analyzer import ProcedureAnalyzer
+    from analyzer.sql_analyzer import SqlAnalyzer
+    from parser.sql_schema_parser import SqlSchemaParser
+    from generator.java_generator import JavaGenerator
+    from generator.gradle_generator import GradleGenerator
+    from generator.docker_generator import DockerGenerator
+except ImportError as e:
+    # Fallback per import alternativi
+    try:
+        sys.path.insert(0, '/app/src')
+        from parser.cobol_parser import CobolParser
+        from analyzer.data_analyzer import DataAnalyzer
+        from analyzer.procedure_analyzer import ProcedureAnalyzer
+        from analyzer.sql_analyzer import SqlAnalyzer
+        from parser.sql_schema_parser import SqlSchemaParser
+        from generator.java_generator import JavaGenerator
+        from generator.gradle_generator import GradleGenerator
+        from generator.docker_generator import DockerGenerator
+    except ImportError as e2:
+        print(f"Errore import: {e}")
+        print(f"Errore import fallback: {e2}")
+        print(f"PYTHONPATH: {sys.path}")
+        print(f"Current dir: {current_dir}")
+        print(f"Src dir: {src_dir}")
+        sys.exit(1)
 
 
 class CobolToJavaMigrator:
     """Classe principale per la migrazione COBOL to Java"""
     
-    def __init__(self, config_path="config/migration_config.yaml"):
+    def __init__(self, config_path="config/migration-config.yaml"):
         """Inizializza il migrator con la configurazione"""
-        self.config = self._load_config(config_path)
+        # Prova diversi percorsi per il file di configurazione
+        config_paths = [
+            config_path,
+            f"/app/{config_path}",
+            f"/app/config/migration-config.yaml",
+            "migration-config.yaml"
+        ]
+        
+        config_found = False
+        for path in config_paths:
+            if os.path.exists(path):
+                self.config = self._load_config(path)
+                config_found = True
+                logger.info(f"Configurazione caricata da: {path}")
+                break
+        
+        if not config_found:
+            logger.warning("File di configurazione non trovato, uso configurazione di default")
+            self.config = self._get_default_config()
+        
         self.parser = CobolParser()
         self.parser.build()
         self.sql_schema_parser = SqlSchemaParser()
@@ -54,36 +97,44 @@ class CobolToJavaMigrator:
                 return yaml.safe_load(f)
         except Exception as e:
             logger.error(f"Errore nel caricamento della configurazione: {e}")
-            # Configurazione di default
-            return {
-                'migration': {
-                    'source_encoding': 'UTF-8',
-                    'target_java_version': '11'
-                },
-                'java': {
-                    'package_base': 'com.migrated.app',
-                    'use_lombok': True
-                },
-                'spring': {
-                    'version': '2.7.0'
-                },
-                'database': {
-                    'type': 'postgresql'
-                },
-                'docker': {
-                    'base_image': 'openjdk:11-jre-slim',
-                    'expose_port': 8080
-                },
-                'logging': {
-                    'level': 'INFO',
-                    'file': 'migration.log'
-                }
+            return self._get_default_config()
+    
+    def _get_default_config(self):
+        """Configurazione di default"""
+        return {
+            'migration': {
+                'source_encoding': 'UTF-8',
+                'target_java_version': '11'
+            },
+            'java': {
+                'package_base': 'com.migrated.app',
+                'use_lombok': True
+            },
+            'spring': {
+                'version': '2.7.0'
+            },
+            'database': {
+                'type': 'postgresql'
+            },
+            'docker': {
+                'base_image': 'openjdk:11-jre-slim',
+                'expose_port': 8080
+            },
+            'logging': {
+                'level': 'INFO',
+                'file': 'migration.log'
             }
+        }
     
     def _setup_logging(self):
         """Configura il sistema di logging"""
         log_level = self.config.get('logging', {}).get('level', 'INFO')
-        log_file = self.config.get('logging', {}).get('file', 'migration.log')
+        log_file = self.config.get('logging', {}).get('file', '/app/logs/migration.log')
+        
+        # Assicurati che la directory dei log esista
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
         
         # Rimuovi handler esistenti
         logger.remove()
@@ -95,13 +146,16 @@ class CobolToJavaMigrator:
             level=log_level
         )
         
-        # Aggiungi file handler
-        logger.add(
-            log_file,
-            rotation="10 MB",
-            retention="7 days",
-            level=log_level
-        )
+        # Aggiungi file handler se possibile
+        try:
+            logger.add(
+                log_file,
+                rotation="10 MB",
+                retention="7 days",
+                level=log_level
+            )
+        except Exception as e:
+            logger.warning(f"Impossibile creare file di log {log_file}: {e}")
     
     def migrate_file(self, cobol_file_path, sql_file_path, output_dir):
         """Migra un singolo file COBOL con schema SQL"""
@@ -109,9 +163,16 @@ class CobolToJavaMigrator:
         logger.info(f"Schema SQL: {sql_file_path}")
         
         try:
+            # Verifica che i file esistano
+            if not os.path.exists(cobol_file_path):
+                logger.error(f"File COBOL non trovato: {cobol_file_path}")
+                return False
+            
             # 1. Leggi il file COBOL
             with open(cobol_file_path, 'r', encoding=self.config['migration']['source_encoding']) as f:
                 cobol_code = f.read()
+            
+            logger.info(f"File COBOL letto: {len(cobol_code)} caratteri")
             
             # 2. Leggi e parsa lo schema SQL
             sql_schema = None
@@ -120,6 +181,8 @@ class CobolToJavaMigrator:
                 with open(sql_file_path, 'r', encoding='utf-8') as f:
                     sql_content = f.read()
                 sql_schema = self.sql_schema_parser.parse(sql_content)
+            else:
+                logger.warning(f"Schema SQL non trovato: {sql_file_path}")
             
             # 3. Parse del codice COBOL
             logger.info("Parsing del codice COBOL...")
@@ -154,6 +217,8 @@ class CobolToJavaMigrator:
             
         except Exception as e:
             logger.error(f"Errore durante la migrazione: {str(e)}")
+            import traceback
+            logger.debug(traceback.format_exc())
             raise
     
     def _analyze_ast(self, ast, sql_schema=None):
@@ -196,6 +261,9 @@ class CobolToJavaMigrator:
     def _write_output(self, output_dir, java_project, gradle_files, docker_files):
         """Scrive tutti i file generati nella directory di output"""
         output_path = Path(output_dir)
+        
+        # Assicurati che la directory di output esista
+        output_path.mkdir(parents=True, exist_ok=True)
         
         # Crea la struttura delle directory
         project_name = java_project.get('project_name', 'migrated-app')
@@ -332,7 +400,7 @@ L'applicazione espone REST API per le operazioni bancarie:
 @click.option('--output', '-o', 'output_dir', required=True,
               help='Directory di output per il progetto Java')
 @click.option('--config', '-c', 'config_file', 
-              default='config/migration_config.yaml',
+              default='config/migration-config.yaml',
               help='File di configurazione')
 @click.option('--debug', is_flag=True, help='Abilita debug mode')
 def main(input_file, schema_file, output_dir, config_file, debug):
