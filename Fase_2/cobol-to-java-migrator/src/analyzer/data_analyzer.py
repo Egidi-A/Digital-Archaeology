@@ -1,8 +1,4 @@
-    def _generate_entities(self) -> List[Dict[str, Any]]:
-        """Genera le entità JPA dalle tabelle SQL identificate"""
-        entities = []
-        
-        if self.sql_schema an"""
+"""
 Data Analyzer - Analizza le strutture dati COBOL e le mappa su classi Java
 """
 
