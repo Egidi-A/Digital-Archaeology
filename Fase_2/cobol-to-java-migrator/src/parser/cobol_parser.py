@@ -383,6 +383,14 @@ class CobolParser:
         else:
             p[0] = f"{p[1]}({p[3]}:{p[5]})"
 
+    def p_string_statement(self, p):
+        """string_statement : STRING string_items DELIMITED BY string_delimiter INTO IDENTIFIER PERIOD"""
+        stmt = StatementNode("STRING", line_number=p.lineno(1))
+        stmt.set_attribute("items", p[2])
+        stmt.set_attribute("delimiter", p[5])
+        stmt.set_attribute("target", p[7])
+        p[0] = stmt
+
     def p_string_delimiter(self, p):
         """string_delimiter : SIZE
                         | STRING_LITERAL"""

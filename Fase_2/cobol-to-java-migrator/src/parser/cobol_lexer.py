@@ -249,13 +249,20 @@ class CobolLexer:
         return t
     
     def t_PICTURE_STRING(self, t):
-        r'(PIC|PICTURE)\s+IS\s+[XAZS9V\(\)\-\+\$\*\,\.]+|(PIC|PICTURE)\s+[XAZS9V\(\)\-\+\$\*\,\.]+'
+        r'(PIC|PICTURE)\s+(IS\s+)?[XAZS9V](\([0-9]+\))?[XAZS9V\-\+\$\*\,\.]*(\([0-9]+\))?'
         # Estrae solo la parte della picture clause
         parts = t.value.split()
         if 'IS' in parts:
-            t.value = parts[parts.index('IS') + 1]
+            idx = parts.index('IS') + 1
         else:
-            t.value = parts[1]
+            idx = 1
+        if idx < len(parts):
+            t.value = parts[idx]
+        
+        # Rimuovi il punto finale se presente
+        if t.value.endswith('.'):
+            t.value = t.value[:-1]
+        
         return t
     
     def t_LEVEL_NUMBER(self, t):
