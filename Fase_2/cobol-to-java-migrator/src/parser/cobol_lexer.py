@@ -108,6 +108,7 @@ class CobolLexer:
         'END-EXEC': 'END_EXEC',
         
         # File operations
+        'SELECT': 'SELECT',
         'ASSIGN': 'ASSIGN',
         'TO': 'TO',
         'ORGANIZATION': 'ORGANIZATION',
