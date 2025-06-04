@@ -533,7 +533,7 @@ def main(input_file, schema_file, output_dir, config_file, debug):
     click.echo(click.style("""
 ╔═══════════════════════════════════════════╗
 ║       COBOL to Java Migration Tool        ║
-║              Version 1.0.0                ║
+║              Version 0.0.1                ║
 ╚═══════════════════════════════════════════╝
 """, fg='cyan'))
     

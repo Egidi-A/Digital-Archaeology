@@ -10,6 +10,11 @@ from loguru import logger
 class CobolLexer:
     """Lexer per il linguaggio COBOL"""
     
+    # Stati per gestire SQL embedded
+    states = (
+        ('sql', 'exclusive'),
+    )
+    
     # Token riservati COBOL
     reserved = {
         # Divisions
@@ -59,11 +64,24 @@ class CobolLexer:
         'FROM': 'FROM',
         'BY': 'BY',
         'GIVING': 'GIVING',
+        'RETURNING': 'RETURNING',
+        'CALL': 'CALL',
+        'CONTINUE': 'CONTINUE',
+        'THRU': 'THRU',
+        'THROUGH': 'THROUGH',
+        'THEN': 'THEN',
+        'END': 'END',
+        'END-READ': 'END_READ',
+        'AT': 'AT',
+        'OF': 'OF',
+        'IN': 'IN',
+        'ROUNDED': 'ROUNDED',
         
         # Data types
         'PIC': 'PIC',
         'PICTURE': 'PICTURE',
         'VALUE': 'VALUE',
+        'VALUES': 'VALUES',
         'OCCURS': 'OCCURS',
         'TIMES': 'TIMES',
         'REDEFINES': 'REDEFINES',
@@ -73,44 +91,28 @@ class CobolLexer:
         'PACKED-DECIMAL': 'PACKED_DECIMAL',
         'ZERO': 'ZERO',
         'ZEROS': 'ZEROS',
+        'ZEROES': 'ZEROES',
         'SPACE': 'SPACE',
         'SPACES': 'SPACES',
         'ALL': 'ALL',
+        'HIGH-VALUE': 'HIGH_VALUE',
+        'HIGH-VALUES': 'HIGH_VALUES',
+        'LOW-VALUE': 'LOW_VALUE',
+        'LOW-VALUES': 'LOW_VALUES',
+        'QUOTE': 'QUOTE',
+        'QUOTES': 'QUOTES',
         
-        # SQL
+        # SQL base tokens
         'EXEC': 'EXEC',
         'SQL': 'SQL',
         'END-EXEC': 'END_EXEC',
-        'SELECT': 'SELECT',
-        'INSERT': 'INSERT',
-        'UPDATE': 'UPDATE',
-        'DELETE': 'DELETE',
-        'INTO': 'INTO',
-        'VALUES': 'VALUES',
-        'WHERE': 'WHERE',
-        'SET': 'SET',
-        'DECLARE': 'DECLARE',
-        'CURSOR': 'CURSOR',
-        'FOR': 'FOR',
-        'FETCH': 'FETCH',
-        'CONNECT': 'CONNECT',
-        'DISCONNECT': 'DISCONNECT',
-        'COMMIT': 'COMMIT',
-        'ROLLBACK': 'ROLLBACK',
-        'SQLCODE': 'SQLCODE',
-        'INCLUDE': 'INCLUDE',
-        'SQLCA': 'SQLCA',
-        'USER': 'USER',
-        'USING': 'USING',
-        'ORDER': 'ORDER',
-        'DESC': 'DESC',
-        
         
         # File operations
         'ASSIGN': 'ASSIGN',
         'TO': 'TO',
         'ORGANIZATION': 'ORGANIZATION',
         'IS': 'IS',
+        'ARE': 'ARE',
         'LINE': 'LINE',
         'SEQUENTIAL': 'SEQUENTIAL',
         'RANDOM': 'RANDOM',
@@ -134,6 +136,7 @@ class CobolLexer:
         
         # Comparison
         'EQUAL': 'EQUAL',
+        'EQUALS': 'EQUALS',
         'GREATER': 'GREATER',
         'LESS': 'LESS',
         'THAN': 'THAN',
@@ -150,11 +153,85 @@ class CobolLexer:
         'REPLACING': 'REPLACING',
         'OTHER': 'OTHER',
         'FILLER': 'FILLER',
-        'COLON': 'COLON',
-        'LPAREN': 'LPAREN',
-        'RPAREN': 'RPAREN',
+        'FUNCTION': 'FUNCTION',
+        'CURRENT-DATE': 'CURRENT_DATE',
+        'LENGTH': 'LENGTH',
+        'LPAD': 'LPAD',
+        'CAST': 'CAST',
+        'AS': 'AS',
+        'MAX': 'MAX',
+        'MIN': 'MIN',
+        'COUNT': 'COUNT',
+        'SUM': 'SUM',
+        'AVG': 'AVG',
+        'COALESCE': 'COALESCE',
+        'SUBSTR': 'SUBSTR',
+        'INTEGER': 'INTEGER',
+        'VARCHAR': 'VARCHAR',
+        'CURRENT_DATE': 'CURRENT_DATE_FUNC',
+        'CURRENT_TIMESTAMP': 'CURRENT_TIMESTAMP',
+        'NOW': 'NOW',
+        'LIKE': 'LIKE',
+        'EXISTS': 'EXISTS',
+        'BETWEEN': 'BETWEEN',
+        'NULL': 'NULL',
+        'JOIN': 'JOIN',
+        'INNER': 'INNER',
+        'LEFT': 'LEFT', 
+        'RIGHT': 'RIGHT',
+        'FULL': 'FULL',
+        'ON': 'ON',
+        'ASC': 'ASC',
+        'DESC': 'DESC',
+        'CURRENT': 'CURRENT',
+        'SQLCODE': 'SQLCODE',
+        'SQLCA': 'SQLCA',
     }
     
+    # Token per lo stato SQL
+    sql_reserved = {
+        'SELECT': 'SELECT',
+        'INSERT': 'INSERT',
+        'UPDATE': 'UPDATE',
+        'DELETE': 'DELETE',
+        'INTO': 'INTO',
+        'VALUES': 'VALUES',
+        'WHERE': 'WHERE',
+        'SET': 'SET',
+        'DECLARE': 'DECLARE',
+        'CURSOR': 'CURSOR',
+        'FOR': 'FOR',
+        'FETCH': 'FETCH',
+        'CONNECT': 'CONNECT',
+        'DISCONNECT': 'DISCONNECT',
+        'COMMIT': 'COMMIT',
+        'ROLLBACK': 'ROLLBACK',
+        'SQLCODE': 'SQLCODE',
+        'INCLUDE': 'INCLUDE',
+        'SQLCA': 'SQLCA',
+        'USER': 'USER',
+        'USING': 'USING',
+        'ORDER': 'ORDER',
+        'BY': 'BY',
+        'DESC': 'DESC',
+        'ASC': 'ASC',
+        'FROM': 'FROM',
+        'JOIN': 'JOIN',
+        'ON': 'ON',
+        'AND': 'AND',
+        'OR': 'OR',
+        'NOT': 'NOT',
+        'NULL': 'NULL',
+        'IS': 'IS',
+        'LIKE': 'LIKE',
+        'IN': 'IN',
+        'EXISTS': 'EXISTS',
+        'BETWEEN': 'BETWEEN',
+        'CURRENT_DATE': 'CURRENT_DATE',
+        'CURRENT_TIMESTAMP': 'CURRENT_TIMESTAMP',
+        'ALL': 'ALL',
+    }
+
     # Lista di tutti i token
     tokens = [
         'NUMBER',
@@ -181,9 +258,15 @@ class CobolLexer:
         'COMMENT',
         'SQL_CODE',
         'HOST_VARIABLE',
-    ] + list(reserved.values())
+        'UNDERSCORE',
+        'CONCATENATE',
+    ] + [v for k, v in reserved.items()] + [v for k, v in sql_reserved.items()]
+    # + [v for k, v in reserved.items() if k == v]
+    # + [v for k, v in reserved.items() if k != v]
+    # + [v for k, v in sql_reserved.items() if k == v]
+    # + [v for k, v in sql_reserved.items() if k != v]
     
-    # Token semplici
+    # Token semplici (stato INITIAL)
     t_PERIOD = r'\.'
     t_COMMA = r','
     t_SEMICOLON = r';'
@@ -200,15 +283,36 @@ class CobolLexer:
     t_NOT_EQUAL = r'<>'
     t_GREATER_EQUAL = r'>='
     t_LESS_EQUAL = r'<='
+    t_UNDERSCORE = r'_'
+    t_CONCATENATE = r'\|\|'
+    
+    # Token semplici (stato SQL)
+    t_sql_PERIOD = r'\.'
+    t_sql_COMMA = r','
+    t_sql_SEMICOLON = r';'
+    t_sql_COLON = r':'
+    t_sql_LPAREN = r'\('
+    t_sql_RPAREN = r'\)'
+    t_sql_PLUS = r'\+'
+    t_sql_MINUS = r'-'
+    t_sql_MULTIPLY_OP = r'\*'
+    t_sql_DIVIDE_OP = r'/'
+    t_sql_EQUALS = r'='
+    t_sql_GREATER_OP = r'>'
+    t_sql_LESS_OP = r'<'
+    t_sql_NOT_EQUAL = r'<>'
+    t_sql_GREATER_EQUAL = r'>='
+    t_sql_LESS_EQUAL = r'<='
+    t_sql_UNDERSCORE = r'_'
+    t_sql_CONCATENATE = r'\|\|'
     
     # Ignora spazi e tab
     t_ignore = ' \t'
+    t_sql_ignore = ' \t'
     
     def __init__(self):
         self.lexer = None
-        self.in_sql_block = False
-        self.sql_buffer = []
-        
+    
     def t_COMMENT(self, t):
         r'\*>.*'
         pass  # Ignora i commenti
@@ -219,22 +323,13 @@ class CobolLexer:
     
     def t_EXEC_SQL(self, t):
         r'EXEC\s+SQL'
-        self.in_sql_block = True
+        t.lexer.begin('sql')
         t.type = 'EXEC'
         return t
     
-    def t_END_EXEC(self, t):
+    def t_sql_END_EXEC(self, t):
         r'END-EXEC'
-        if self.in_sql_block:
-            self.in_sql_block = False
-            # Processa il buffer SQL accumulato
-            if self.sql_buffer:
-                sql_token = lex.LexToken()
-                sql_token.type = 'SQL_CODE'
-                sql_token.value = ' '.join(self.sql_buffer)
-                sql_token.lineno = t.lineno
-                sql_token.lexpos = t.lexpos
-                self.sql_buffer = []
+        t.lexer.begin('INITIAL')
         t.type = 'END_EXEC'
         return t
     
@@ -243,7 +338,17 @@ class CobolLexer:
         t.value = t.value[1:]  # Rimuove il :
         return t
     
+    def t_sql_HOST_VARIABLE(self, t):
+        r':[\w-]+'
+        t.value = t.value[1:]  # Rimuove il :
+        return t
+    
     def t_STRING_LITERAL(self, t):
+        r'"[^"]*"|\'[^\']*\''
+        t.value = t.value[1:-1]  # Rimuove le virgolette
+        return t
+    
+    def t_sql_STRING_LITERAL(self, t):
         r'"[^"]*"|\'[^\']*\''
         t.value = t.value[1:-1]  # Rimuove le virgolette
         return t
@@ -258,15 +363,10 @@ class CobolLexer:
             idx = 1
         if idx < len(parts):
             t.value = parts[idx]
-        
-        # Rimuovi il punto finale se presente
-        if t.value.endswith('.'):
-            t.value = t.value[:-1]
-        
         return t
     
     def t_LEVEL_NUMBER(self, t):
-        r'^\s*(0[1-9]|[1-4][0-9]|77|78|88)\s+'
+        r'(0[1-9]|[1-4][0-9]|77|78|88)\s+'
         t.value = t.value.strip()
         return t
     
@@ -278,26 +378,62 @@ class CobolLexer:
             t.value = int(t.value)
         return t
     
+    def t_sql_NUMBER(self, t):
+        r'\d+(\.\d+)?'
+        if '.' in t.value:
+            t.value = float(t.value)
+        else:
+            t.value = int(t.value)
+        return t
+    
     def t_IDENTIFIER(self, t):
-        r'[A-Za-z][A-Za-z0-9\-]*(?:\([0-9]+:[0-9]+\))?'
-        # Converte in maiuscolo per confronto
-        upper_value = t.value.upper().replace('_', '-')
-        
-        # Se siamo in un blocco SQL, accumula il codice
-        if self.in_sql_block and upper_value not in ['END-EXEC']:
-            self.sql_buffer.append(t.value)
-            return None
+        r'[A-Za-z][A-Za-z0-9\-_]*(?:\([0-9]+(?::[0-9]+)?\))?'
+        # Normalizza identificatori sostituendo underscore con trattini per COBOL
+        normalized = t.value.upper()
         
         # Controlla se è una parola riservata
-        t.type = self.reserved.get(upper_value, 'IDENTIFIER')
+        if normalized in self.reserved:
+            t.type = self.reserved[normalized]
+        else:
+            # Mantieni underscore per variabili come WS_SCELTA
+            t.type = 'IDENTIFIER'
+            
+        return t
+    
+    def t_sql_IDENTIFIER(self, t):
+        r'[A-Za-z_][A-Za-z0-9_]*'
+        # In SQL, gli identificatori possono avere underscore
+        upper_value = t.value.upper()
+        
+        # Controlla se è una parola riservata SQL
+        if upper_value in self.sql_reserved:
+            t.type = self.sql_reserved[upper_value]
+        else:
+            t.type = 'IDENTIFIER'
+            
+        return t
+    
+    # Speciale per SQL_CODE
+    def t_sql_SQL_CODE(self, t):
+        r'[^;]+'
+        # Accumula tutto il codice SQL fino al prossimo END-EXEC
+        # Questo è gestito dal parser
         return t
     
     def t_newline(self, t):
         r'\n+'
         t.lexer.lineno += len(t.value)
     
+    def t_sql_newline(self, t):
+        r'\n+'
+        t.lexer.lineno += len(t.value)
+    
     def t_error(self, t):
         logger.warning(f"Carattere illegale '{t.value[0]}' alla linea {t.lineno}")
+        t.lexer.skip(1)
+    
+    def t_sql_error(self, t):
+        logger.warning(f"Carattere illegale in SQL '{t.value[0]}' alla linea {t.lineno}")
         t.lexer.skip(1)
     
     def build(self, **kwargs):
@@ -307,7 +443,10 @@ class CobolLexer:
     
     def tokenize(self, data):
         """Tokenizza il codice COBOL"""
-        self.lexer.input(data)
+        # Preprocessa prima di tokenizzare
+        preprocessed = self._preprocess_input(data)
+        
+        self.lexer.input(preprocessed)
         tokens = []
         while True:
             tok = self.lexer.token()
@@ -315,6 +454,25 @@ class CobolLexer:
                 break
             tokens.append(tok)
         return tokens
+    
+    def _preprocess_input(self, data):
+        """Preprocessa l'input per gestire casi speciali"""
+        lines = data.split('\n')
+        processed_lines = []
+        
+        for line in lines:
+            # Gestisci underscore in identificatori COBOL
+            # Gli underscore sono validi in COBOL moderno
+            processed_line = line
+            
+            # Non modificare underscore in stringhe o commenti
+            if not (line.strip().startswith('*') or '*>' in line):
+                # Mantieni gli underscore negli identificatori
+                pass
+            
+            processed_lines.append(processed_line)
+        
+        return '\n'.join(processed_lines)
     
     def test(self, data):
         """Test del lexer con output dei token"""
