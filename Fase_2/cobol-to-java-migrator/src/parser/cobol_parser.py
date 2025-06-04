@@ -285,14 +285,17 @@ class CobolParser:
                              | PIC IS picture_string
                              | PICTURE picture_string
                              | PIC picture_string
+                             | PICTURE_STRING
                              | empty"""
-        if len(p) > 2:
-            if len(p) == 4:
-                p[0] = p[3]
-            else:
-                p[0] = p[2]
-        else:
-            p[0] = None
+        if len(p) == 2:
+            if p[1]:  # PICTURE_STRING diretto
+                p[0] = str(p[1])
+            else:  # empty
+                p[0] = None
+        elif len(p) == 3:  # PIC/PICTURE picture_string
+            p[0] = p[2]
+        else:  # PIC/PICTURE IS picture_string
+            p[0] = p[3]
     
     def p_picture_string(self, p):
         """picture_string : PICTURE_STRING
