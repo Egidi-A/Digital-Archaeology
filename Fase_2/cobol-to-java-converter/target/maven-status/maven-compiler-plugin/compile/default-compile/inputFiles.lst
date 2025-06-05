@@ -1,8 +1,7 @@
+/home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/model/EnvironmentDivision.java
 /home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/generator/JavaCodeGenerator.java
-/home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/model/DataItem.java
+/home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/parser/IdentificationDivisionParser.java
 /home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/model/CobolProgram.java
-/home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/parser/DataDivisionParser.java
 /home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/CobolToJavaConverter.java
-/home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/parser/ProcedureDivisionParser.java
 /home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/parser/EnvironmentDivisionParser.java
 /home/aegidi/Documenti/COBOL Trials/digitalarcheology/Fase_2/cobol-to-java-converter/src/main/java/com/cobolconverter/model/IdentificationDivision.java

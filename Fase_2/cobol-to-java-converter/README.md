@@ -24,27 +24,21 @@ java -jar target/cobol-to-java-converter-1.0.0.jar src/test/resources/sample-cob
 # Output will be created as myprogram.java in the same directory
 ```
 
-### Docker Build & Run
-
-```bash
-# Build Docker image
-docker-compose build
-
-# Run converter - nome file da convertire
-docker-compose run converter /input/hello.cob /output/hello.java
-```
-
 ## Project Structure
 
 ```
 cobol-to-java-converter/
-├── src/main/java/com/cobolconverter/   # Java source code
-├── src/test/resources/sample-cobol/     # Sample COBOL files
-├── output/                              # Generated Java files (Docker)
-├── pom.xml                              # Maven configuration
-├── Dockerfile                           # Docker configuration
-└── docker-compose.yml                   # Docker Compose configuration
-```
+├── src/main/java/com/cobolconverter/
+│   ├── CobolToJavaConverter.java         (REPLACE with my "Updated CobolToJavaConverter.java")
+│   ├── model/
+│   │   ├── CobolProgram.java            (NEW - use my "CobolProgram.java - Model Class")
+│   │   ├── IdentificationDivision.java  (NEW - use my "IdentificationDivision.java - Model Class")
+│   │   └── EnvironmentDivision.java     (NEW - use my "EnvironmentDivision.java - Model Class")
+│   ├── parser/
+│   │   ├── IdentificationDivisionParser.java  (NEW - use my "IdentificationDivisionParser.java")
+│   │   └── EnvironmentDivisionParser.java     (NEW - use my "EnvironmentDivisionParser.java")
+│   └── generator/
+│       └── JavaCodeGenerator.java       (NEW - use my "JavaCodeGenerator.java")```
 
 ## Usage
 
