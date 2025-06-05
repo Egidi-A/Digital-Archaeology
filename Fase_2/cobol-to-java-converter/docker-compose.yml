@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  converter:
+    build: .
+    volumes:
+      - ./src/test/resources/sample-cobol:/input
+      - ./output:/output
+    command: ["/input/hello.cob", "/output/Hello.java"]
+    
+  # Development mode with hot reload
+  dev:
+    build: 
+      context: .
+      target: build
+    volumes:
+      - ./src:/app/src
+      - ./docker/cobol-samples:/input
+      - ./output:/output
+      - maven-cache:/root/.m2
+    command: mvn spring-boot:run
+    stdin_open: true
+    tty: true
+
+volumes:
+  maven-cache:
