@@ -20,7 +20,7 @@ cd cobol-to-java-converter
 mvn clean package
 
 # Run converter - SPECIFY THE PATH TO YOUR COBOL FILE
-java -jar target/cobol-to-java-converter-1.0.0.jar src/test/hello.cob
+java -jar target/cobol-to-java-converter-1.0.0.jar src/test/hello.cbl
 # Output will be created as myprogram.java in the same directory
 ```
 

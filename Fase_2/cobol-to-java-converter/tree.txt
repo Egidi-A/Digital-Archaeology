@@ -13,19 +13,21 @@
 │   │   │           │   ├── CobolProgram.java
 │   │   │           │   ├── DataDivision.java
 │   │   │           │   ├── EnvironmentDivision.java
-│   │   │           │   └── IdentificationDivision.java
+│   │   │           │   ├── IdentificationDivision.java
+│   │   │           │   └── ProcedureDivision.java
 │   │   │           └── parser
 │   │   │               ├── DataDivisionParser.java
 │   │   │               ├── EnvironmentDivisionParser.java
-│   │   │               └── IdentificationDivisionParser.java
+│   │   │               ├── IdentificationDivisionParser.java
+│   │   │               └── ProcedureDivisionParser.java
 │   │   └── resources
 │   │       └── templates
 │   └── test
 │       ├── bank_system_cobol.cbl
 │       ├── bank_system_cobol.java
-│       ├── GestioneConti.java
-│       ├── hello.cbl
-│       └── hello.java
+│       ├── basic.cbl
+│       ├── basic.java
+│       └── GestioneConti.java
 ├── target
 │   ├── archive-tmp
 │   │   └── cobol-to-java-converter-1.0.0.jar
@@ -40,11 +42,18 @@
 │   │           │   ├── DataDivision$DataItem.class
 │   │           │   ├── DataDivision.class
 │   │           │   ├── EnvironmentDivision.class
-│   │           │   └── IdentificationDivision.class
+│   │           │   ├── IdentificationDivision.class
+│   │           │   ├── ProcedureDivision$Paragraph.class
+│   │           │   ├── ProcedureDivision$Section.class
+│   │           │   ├── ProcedureDivision$Statement$StatementType.class
+│   │           │   ├── ProcedureDivision$Statement.class
+│   │           │   └── ProcedureDivision.class
 │   │           └── parser
 │   │               ├── DataDivisionParser.class
 │   │               ├── EnvironmentDivisionParser.class
-│   │               └── IdentificationDivisionParser.class
+│   │               ├── IdentificationDivisionParser.class
+│   │               ├── ProcedureDivisionParser$1.class
+│   │               └── ProcedureDivisionParser.class
 │   ├── cobol-to-java-converter-1.0.0.jar
 │   ├── generated-sources
 │   │   └── annotations
@@ -58,4 +67,4 @@
 │                   └── inputFiles.lst
 └── tree.txt
 
-27 directories, 32 files
+27 directories, 41 files

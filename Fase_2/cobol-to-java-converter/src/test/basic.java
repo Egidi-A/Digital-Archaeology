@@ -23,8 +23,19 @@ public class CustomerReport {
     private int wsMonth; // PIC 9(2)
     private int wsDay; // PIC 9(2)
     
+    // Procedure Division
+    // Paragraphs: 1
+    
     public static void main(String[] args) {
-        // Main program logic goes here
-        System.out.println("CustomerReport - Generated from COBOL");
+        CustomerReport program = new CustomerReport();
+        program.mainProcedure();
     }
+    
+    private void mainProcedure() {
+        // MAIN-PROCEDURE
+        System.out.println("CUSTOMER REPORT SYSTEM");
+        System.out.println("PROCESSING...");
+        System.exit(0);
+    }
+    
 }
