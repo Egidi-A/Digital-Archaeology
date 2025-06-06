@@ -24,6 +24,11 @@ java -jar target/cobol-to-java-converter-1.0.0.jar src/test/hello.cbl
 # Output will be created as myprogram.java in the same directory
 ```
 
+## Generazione documentazione Java
+```bash
+javadoc -d doc src/main/java/com/cobolconverter/model/CobolProgram.java
+```
+
 ## Project Structure
 
 to build the tree:

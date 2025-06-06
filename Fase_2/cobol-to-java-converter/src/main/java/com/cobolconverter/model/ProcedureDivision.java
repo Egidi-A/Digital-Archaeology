@@ -5,48 +5,93 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Rappresenta la PROCEDURE DIVISION di un programma COBOL.
+ * <p>
+ * Questa classe modella la logica procedurale del programma COBOL, suddivisa in:
+ * <ul>
+ *   <li><b>Sections</b>: blocchi logici opzionali che raggruppano paragrafi.</li>
+ *   <li><b>Paragraphs</b>: unità di codice eseguibile, contenenti una o più istruzioni.</li>
+ *   <li><b>Statements</b>: singole istruzioni COBOL (MOVE, DISPLAY, IF, ecc.).</li>
+ * </ul>
+ * Ogni sezione può contenere più paragrafi, e ogni paragrafo più istruzioni.
+ */
 public class ProcedureDivision {
+    /** Lista delle sezioni presenti nella Procedure Division. */
     private List<Section> sections = new ArrayList<>();
+    /** Lista dei paragrafi presenti (se non sono usate le sezioni). */
     private List<Paragraph> paragraphs = new ArrayList<>();
+    /** Indica se la Procedure Division contiene almeno una sezione. */
     private boolean hasSections;
     
-    // Inner class for sections
+    /**
+     * Rappresenta una SECTION COBOL, che può contenere più paragrafi.
+     */
     public static class Section {
         private String name;
         private List<Paragraph> paragraphs = new ArrayList<>();
         
+        /**
+         * Costruttore della Section.
+         * @param name nome della sezione
+         */
         public Section(String name) {
             this.name = name;
         }
         
+        /** @return nome della sezione */
         public String getName() { return name; }
+        /** @return lista dei paragrafi della sezione */
         public List<Paragraph> getParagraphs() { return paragraphs; }
+        /** Aggiunge un paragrafo alla sezione */
         public void addParagraph(Paragraph paragraph) { paragraphs.add(paragraph); }
     }
     
-    // Inner class for paragraphs
+    /**
+     * Rappresenta un PARAGRAPH COBOL, contenente una lista di istruzioni.
+     */
     public static class Paragraph {
         private String name;
         private List<Statement> statements = new ArrayList<>();
         
+        /**
+         * Costruttore del Paragraph.
+         * @param name nome del paragrafo
+         */
         public Paragraph(String name) {
             this.name = name;
         }
         
+        /** @return nome del paragrafo */
         public String getName() { return name; }
+        /** @return lista delle istruzioni del paragrafo */
         public List<Statement> getStatements() { return statements; }
+        /** Aggiunge una istruzione al paragrafo */
         public void addStatement(Statement statement) { statements.add(statement); }
     }
     
-    // Inner class for statements
+    /**
+     * Rappresenta una singola istruzione COBOL (statement).
+     * <p>
+     * Ogni Statement ha un tipo, il testo originale, eventuali operandi e attributi aggiuntivi.
+     */
     public static class Statement {
+        /** Tipo di istruzione COBOL (MOVE, DISPLAY, IF, ecc.). */
         private StatementType type;
+        /** Testo COBOL originale dell'istruzione. */
         private String rawText;
-        private String mainOperand = "Valore default mainOperand per evitare NullPointerException"; // Default value for mainOperand da cambiare, solo per evitare NullPointerException
+        /** Operando principale (es. valore sorgente o condizione). */
+        private String mainOperand = "Valore default mainOperand per evitare NullPointerException";
+        /** Operando di destinazione (es. variabile target). */
         private String targetOperand;
+        /** Eventuali istruzioni annidate (per IF, PERFORM INLINE, ecc.). */
         private List<Statement> nestedStatements = new ArrayList<>();
+        /** Attributi aggiuntivi (es. UNTIL, TIMES, NO_ADVANCING, ecc.). */
         private Map<String, String> attributes = new HashMap<>();
         
+        /**
+         * Enum che rappresenta i principali tipi di istruzioni COBOL.
+         */
         public enum StatementType {
             MOVE, COMPUTE, DISPLAY, ACCEPT, PERFORM, IF, EVALUATE, 
             ADD, SUBTRACT, MULTIPLY, DIVIDE, OPEN, CLOSE, READ, 
@@ -54,27 +99,44 @@ public class ProcedureDivision {
             EXEC_SQL, ELSE, END_IF, WHEN, END_EVALUATE, UNKNOWN
         }
         
+        /**
+         * Costruttore di Statement.
+         * @param type tipo di istruzione
+         * @param rawText testo COBOL originale
+         */
         public Statement(StatementType type, String rawText) {
             this.type = type;
             this.rawText = rawText;
         }
         
-        // Getters and setters
+        /** @return tipo di istruzione */
         public StatementType getType() { return type; }
+        /** @return testo COBOL originale */
         public String getRawText() { return rawText; }
+        /** @return operando principale */
         public String getMainOperand() { return mainOperand; }
+        /** Imposta l'operando principale */
         public void setMainOperand(String mainOperand) { this.mainOperand = mainOperand; }
+        /** @return operando di destinazione */
         public String getTargetOperand() { return targetOperand; }
+        /** Imposta l'operando di destinazione */
         public void setTargetOperand(String targetOperand) { this.targetOperand = targetOperand; }
+        /** @return lista di istruzioni annidate */
         public List<Statement> getNestedStatements() { return nestedStatements; }
+        /** Aggiunge una istruzione annidata */
         public void addNestedStatement(Statement statement) { nestedStatements.add(statement); }
         
-        // New methods for attributes
+        /** Aggiunge un attributo (es. UNTIL, TIMES, ecc.) */
         public void addAttribute(String key, String value) { attributes.put(key, value); }
+        /** Restituisce il valore di un attributo */
         public String getAttribute(String key) { return attributes.get(key); }
+        /** Verifica se un attributo è presente */
         public boolean hasAttribute(String key) { return attributes.containsKey(key); }
         
-        // Generate basic Java equivalent
+        /**
+         * Genera una rappresentazione Java equivalente dell'istruzione COBOL.
+         * @return codice Java equivalente come stringa
+         */
         public String toJava() {
             switch (type) {
                 case MOVE:
@@ -128,10 +190,16 @@ public class ProcedureDivision {
             }
         }
         
+        /**
+         * Formatta l'operando per la DISPLAY in stile Java.
+         * Gestisce concatenazioni e valori speciali COBOL.
+         * @param operand operando COBOL
+         * @return stringa Java formattata
+         */
         private String formatDisplayOperand(String operand) {
             if (operand == null) return "\"\"";
             
-            // Handle multiple display items separated by spaces
+            // Gestisce più item separati da spazi (es. DISPLAY A B C)
             String[] parts = operand.split("\\s+(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
             
             if (parts.length > 1) {
@@ -146,16 +214,21 @@ public class ProcedureDivision {
             return formatSingleOperand(operand);
         }
         
+        /**
+         * Formatta un singolo operando per la DISPLAY.
+         * @param operand operando COBOL
+         * @return stringa Java
+         */
         private String formatSingleOperand(String operand) {
             operand = operand.trim();
             
-            // Already quoted
+            // Già tra virgolette
             if ((operand.startsWith("\"") && operand.endsWith("\"")) ||
                 (operand.startsWith("'") && operand.endsWith("'"))) {
                 return operand;
             }
             
-            // COBOL special values
+            // Valori speciali COBOL
             if ("SPACES".equalsIgnoreCase(operand) || "SPACE".equalsIgnoreCase(operand)) {
                 return "\" \"";
             }
@@ -163,14 +236,19 @@ public class ProcedureDivision {
                 return "\"0\"";
             }
             
-            // Variable name
+            // Nome variabile
             return toJavaName(operand);
         }
         
+        /**
+         * Converte una condizione COBOL in sintassi Java.
+         * @param condition condizione COBOL
+         * @return condizione Java
+         */
         private String convertCondition(String condition) {
             if (condition == null) return "true";
             
-            // Simple conversions
+            // Conversioni semplici
             condition = condition.replaceAll("\\bNOT\\s*=\\b", "!=");
             condition = condition.replaceAll("\\b=\\b", "==");
             condition = condition.replaceAll("\\bAND\\b", "&&");
@@ -180,6 +258,10 @@ public class ProcedureDivision {
             return condition;
         }
         
+        /**
+         * Genera codice Java per la STRING COBOL.
+         * @return codice Java equivalente
+         */
         private String buildStringStatement() {
             if (targetOperand == null) return "// STRING statement incomplete";
             
@@ -188,6 +270,11 @@ public class ProcedureDivision {
                 targetOperand + " = sb.toString();";
         }
         
+        /**
+         * Converte un nome COBOL in camelCase per Java.
+         * @param cobolName nome COBOL
+         * @return nome Java
+         */
         private String toJavaName(String cobolName) {
             if (cobolName == null) return "unnamed";
             
@@ -212,18 +299,27 @@ public class ProcedureDivision {
         }
     }
 
-    // Getters and setters
+    /** Restituisce la lista delle sezioni. */
     public List<Section> getSections() { return sections; }
+    /** Aggiunge una sezione alla Procedure Division. */
     public void addSection(Section section) { 
         sections.add(section);
         hasSections = true;
     }
     
+    /** Restituisce la lista dei paragrafi (se non sono usate le sezioni). */
     public List<Paragraph> getParagraphs() { return paragraphs; }
+    /** Aggiunge un paragrafo alla Procedure Division. */
     public void addParagraph(Paragraph paragraph) { paragraphs.add(paragraph); }
     
+    /** Indica se la Procedure Division contiene almeno una sezione. */
     public boolean hasSections() { return hasSections; }
     
+    /**
+     * Restituisce un commento riassuntivo della Procedure Division,
+     * utile per la generazione di codice o documentazione.
+     * @return commento Java con le sezioni e i paragrafi presenti
+     */
     public String toJavaComment() {
         StringBuilder sb = new StringBuilder();
         sb.append("    // Procedure Division\n");

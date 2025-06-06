@@ -8,10 +8,29 @@ import com.cobolconverter.model.DataDivision.DataItem;
 import com.cobolconverter.model.ProcedureDivision;
 import com.cobolconverter.model.ProcedureDivision.*;
 
-
-
+/**
+ * Generatore di codice Java a partire da un oggetto {@link CobolProgram}.
+ * <p>
+ * Questa classe si occupa di trasformare la rappresentazione interna di un programma COBOL
+ * (ottenuta tramite parsing delle divisioni principali) in una classe Java equivalente.
+ * <ul>
+ *   <li>Genera la JavaDoc e i commenti di classe a partire dalla Identification Division.</li>
+ *   <li>Traduce le sezioni Environment e Data come commenti e campi Java.</li>
+ *   <li>Traduce la Procedure Division in metodi Java, uno per ogni paragrafo COBOL.</li>
+ *   <li>Gestisce la conversione di statement COBOL in istruzioni Java equivalenti.</li>
+ * </ul>
+ * Il risultato è una stringa contenente il codice sorgente Java generato.
+ */
 public class JavaCodeGenerator {
     
+    /**
+     * Genera il codice Java equivalente a partire da un {@link CobolProgram}.
+     * <p>
+     * Il metodo produce la dichiarazione di classe, i campi, i metodi e la main method,
+     * traducendo le divisioni COBOL in strutture Java.
+     * @param program oggetto CobolProgram popolato dal parser
+     * @return codice sorgente Java generato come stringa
+     */
     public String generate(CobolProgram program) {
         StringBuilder sb = new StringBuilder();
         
@@ -26,7 +45,7 @@ public class JavaCodeGenerator {
 
         //----------------------------------------------------------------------------------------------
 
-        // JavaDoc
+        // JavaDoc di classe generata a partire dai metadati COBOL
         sb.append("/**\n");
         if (idDiv.getAuthor() != null) {
             sb.append(" * @author ").append(idDiv.getAuthor()).append("\n");
@@ -46,7 +65,7 @@ public class JavaCodeGenerator {
         sb.append(" * Generated from COBOL program\n");
         sb.append(" */\n");
         
-        // Class Declaration
+        // Dichiarazione della classe Java
         String className = toCamelCase(idDiv.getProgramId());
         sb.append("public class ").append(className).append(" {\n");
         sb.append("    \n");
@@ -60,7 +79,7 @@ public class JavaCodeGenerator {
 
         //----------------------------------------------------------------------------------------------
 
-        // Add Environment Division info as comments
+        // Inserisce informazioni della Environment Division come commenti
         if (envDiv != null) {
             sb.append(envDiv.toJavaComment());
         }
@@ -73,16 +92,16 @@ public class JavaCodeGenerator {
 
         //----------------------------------------------------------------------------------------------
 
-        // Add Data Division info
+        // Inserisce informazioni della Data Division e genera i campi Java
         if (dataDiv != null) {
             sb.append(dataDiv.toJavaComment());
             sb.append("    \n");
             
-            // Generate fields from Working-Storage items
+            // Genera i campi Java corrispondenti agli item di Working-Storage
             if (!dataDiv.getWorkingStorageItems().isEmpty()) {
                 sb.append("    // Working-Storage Fields\n");
                 for (DataItem item : dataDiv.getWorkingStorageItems()) {
-                    // Skip 88-level condition names for now
+                    // Salta le condition names di livello 88
                     if (!"88".equals(item.getLevel())) {
                         sb.append(item.toJavaField()).append("\n");
                     }
@@ -97,16 +116,16 @@ public class JavaCodeGenerator {
         ************************************************************************************************/
         
         //----------------------------------------------------------------------------------------------
-        // Add Procedure Division info
+        // Inserisce informazioni della Procedure Division e genera i metodi Java
         if (procDiv != null) {
             sb.append(procDiv.toJavaComment());
             sb.append("    \n");
             
-            // Generate main method
+            // Genera il metodo main Java che richiama il primo paragrafo COBOL
             sb.append("    public static void main(String[] args) {\n");
             sb.append("        ").append(className).append(" program = new ").append(className).append("();\n");
             
-            // Call the first paragraph if exists
+            // Richiama il primo paragrafo (o il primo della prima sezione)
             if (procDiv.hasSections() && !procDiv.getSections().isEmpty()) {
                 Section firstSection = procDiv.getSections().get(0);
                 if (!firstSection.getParagraphs().isEmpty()) {
@@ -121,7 +140,7 @@ public class JavaCodeGenerator {
             sb.append("    }\n");
             sb.append("    \n");
             
-            // Generate methods for paragraphs
+            // Genera i metodi Java per ogni paragrafo COBOL
             if (procDiv.hasSections()) {
                 for (Section section : procDiv.getSections()) {
                     sb.append("    // ").append(section.getName()).append(" SECTION\n");
@@ -138,6 +157,7 @@ public class JavaCodeGenerator {
 
     //----------------------------------------------------------------------------------------------
 
+            // Metodo main di fallback se la Procedure Division non è presente
             sb.append("    public static void main(String[] args) {\n");
             sb.append("        // Main program logic goes here\n");
             sb.append("        System.out.println(\"").append(className).append(" - Generated from COBOL\");\n");
@@ -149,7 +169,7 @@ public class JavaCodeGenerator {
 
         sb.append("}\n");
 
-        // Return the generated Java code as a string
+        // Restituisce il codice Java generato come stringa
         return sb.toString();
     }
     
@@ -158,6 +178,12 @@ public class JavaCodeGenerator {
     /************************************************************************************************
      * FUNZIONI DI SUPPORTO
      ************************************************************************************************/
+
+    /**
+     * Converte un nome COBOL (es. "MY-PROGRAM") in CamelCase per la dichiarazione di classe Java.
+     * @param cobolName nome COBOL
+     * @return nome Java in CamelCase
+     */
     private String toCamelCase(String cobolName) {
         if (cobolName == null) return "UnnamedProgram";
         
@@ -176,6 +202,11 @@ public class JavaCodeGenerator {
         return result.toString();
     }
     
+    /**
+     * Converte un nome COBOL in camelCase per la dichiarazione di metodi Java.
+     * @param cobolName nome COBOL
+     * @return nome Java in camelCase
+     */
     private String toJavaMethodName(String cobolName) {
         if (cobolName == null) return "unnamed";
         
@@ -199,10 +230,15 @@ public class JavaCodeGenerator {
         return result.toString();
     }
     
+    /**
+     * Converte un nome COBOL in nome variabile Java, gestendo valori speciali COBOL.
+     * @param cobolName nome COBOL
+     * @return nome variabile Java o valore letterale
+     */
     private String toJavaVarName(String cobolName) {
         if (cobolName == null) return "null";
         
-        // Handle special COBOL values
+        // Gestione di valori speciali COBOL
         if ("SPACES".equalsIgnoreCase(cobolName) || "SPACE".equalsIgnoreCase(cobolName)) {
             return "\"\"";
         }
@@ -210,10 +246,15 @@ public class JavaCodeGenerator {
             return "0";
         }
         
-        // Convert variable name
+        // Conversione standard
         return toJavaMethodName(cobolName);
     }
 
+    /**
+     * Genera il metodo Java corrispondente a un paragrafo COBOL.
+     * @param paragraph oggetto Paragraph da convertire
+     * @param sb StringBuilder su cui scrivere il codice
+     */
     private void generateParagraphMethod(Paragraph paragraph, StringBuilder sb) {
         String methodName = toJavaMethodName(paragraph.getName());
         
@@ -228,10 +269,18 @@ public class JavaCodeGenerator {
         sb.append("    \n");
     }
 
+    /**
+     * Genera il codice Java per uno statement COBOL.
+     * <p>
+     * Gestisce la conversione di MOVE, DISPLAY, PERFORM e altri statement noti.
+     * @param stmt oggetto Statement COBOL
+     * @param sb StringBuilder su cui scrivere il codice
+     * @param indent indentazione da applicare
+     */
     private void generateStatement(Statement stmt, StringBuilder sb, String indent) {
         String javaCode = stmt.toJava();
         
-        // Handle variable name conversion for known operands
+        // Conversione specifica per statement noti
         if (stmt.getType() == Statement.StatementType.MOVE) {
             String source = toJavaVarName(stmt.getMainOperand());
             String target = toJavaVarName(stmt.getTargetOperand());
@@ -249,7 +298,7 @@ public class JavaCodeGenerator {
         
         sb.append(indent).append(javaCode).append("\n");
         
-        // Handle nested statements (for future IF/EVALUATE blocks)
+        // Gestione di eventuali statement annidati (es. IF/EVALUATE)
         for (Statement nested : stmt.getNestedStatements()) {
             generateStatement(nested, sb, indent + "    ");
         }
