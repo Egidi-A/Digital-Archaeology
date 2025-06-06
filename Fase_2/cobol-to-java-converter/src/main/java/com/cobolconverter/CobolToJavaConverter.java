@@ -31,6 +31,9 @@ public class CobolToJavaConverter {
 
             DataDivisionParser dataParser = new DataDivisionParser();
             program.setDataDivision(dataParser.parse(normalizedSource));
+
+            ProcedureDivisionParser procParser = new ProcedureDivisionParser();
+            program.setProcedureDivision(procParser.parse(normalizedSource));
             
             // Generate Java code
             JavaCodeGenerator generator = new JavaCodeGenerator();

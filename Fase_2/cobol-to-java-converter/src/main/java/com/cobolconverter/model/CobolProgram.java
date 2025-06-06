@@ -4,6 +4,7 @@ public class CobolProgram {
     private IdentificationDivision identificationDivision;
     private EnvironmentDivision environmentDivision;
     private DataDivision dataDivision;
+    private ProcedureDivision procedureDivision;
 
     //IDENTIFICATION DIVISION
     public IdentificationDivision getIdentificationDivision() {
@@ -29,5 +30,14 @@ public class CobolProgram {
     
     public void setDataDivision(DataDivision dataDivision) {
         this.dataDivision = dataDivision;
+    }
+
+    //PROCEDURE DIVISION
+    public ProcedureDivision getProcedureDivision() {
+        return procedureDivision;
+    }
+    
+    public void setProcedureDivision(ProcedureDivision procedureDivision) {
+        this.procedureDivision = procedureDivision;
     }
 }
