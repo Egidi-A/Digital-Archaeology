@@ -1,7 +1,9 @@
 package com.cobolconverter.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ProcedureDivision {
     private List<Section> sections = new ArrayList<>();
@@ -40,14 +42,16 @@ public class ProcedureDivision {
     public static class Statement {
         private StatementType type;
         private String rawText;
-        private String mainOperand;
+        private String mainOperand = "Valore default mainOperand per evitare NullPointerException"; // Default value for mainOperand da cambiare, solo per evitare NullPointerException
         private String targetOperand;
         private List<Statement> nestedStatements = new ArrayList<>();
+        private Map<String, String> attributes = new HashMap<>();
         
         public enum StatementType {
             MOVE, COMPUTE, DISPLAY, ACCEPT, PERFORM, IF, EVALUATE, 
             ADD, SUBTRACT, MULTIPLY, DIVIDE, OPEN, CLOSE, READ, 
-            WRITE, EXIT, STOP, GOBACK, UNKNOWN
+            WRITE, EXIT, STOP, GOBACK, STRING, UNSTRING,
+            EXEC_SQL, ELSE, END_IF, WHEN, END_EVALUATE, UNKNOWN
         }
         
         public Statement(StatementType type, String rawText) {
@@ -65,28 +69,123 @@ public class ProcedureDivision {
         public List<Statement> getNestedStatements() { return nestedStatements; }
         public void addNestedStatement(Statement statement) { nestedStatements.add(statement); }
         
+        // New methods for attributes
+        public void addAttribute(String key, String value) { attributes.put(key, value); }
+        public String getAttribute(String key) { return attributes.get(key); }
+        public boolean hasAttribute(String key) { return attributes.containsKey(key); }
+        
         // Generate basic Java equivalent
         public String toJava() {
             switch (type) {
                 case MOVE:
                     return targetOperand + " = " + mainOperand + ";";
                 case DISPLAY:
-                    return "System.out.println(" + mainOperand + ");";
+                    String displayCode = "System.out.print";
+                    if (!hasAttribute("NO_ADVANCING")) {
+                        displayCode += "ln";
+                    }
+                    return displayCode + "(" + formatDisplayOperand(mainOperand) + ");";
                 case ACCEPT:
                     return targetOperand + " = scanner.nextLine();";
                 case COMPUTE:
-                    // For now, just return the raw compute expression
-                    return "// COMPUTE " + rawText;
+                    return targetOperand + " = " + mainOperand + ";";
                 case PERFORM:
-                    return toJavaName(mainOperand) + "();";
+                    if (hasAttribute("UNTIL")) {
+                        return "while (!(" + convertCondition(getAttribute("UNTIL")) + ")) {";
+                    } else if (hasAttribute("TIMES")) {
+                        return "for (int i = 0; i < " + getAttribute("TIMES") + "; i++) {";
+                    } else if (mainOperand != null && !"INLINE".equals(mainOperand)) {
+                        return toJavaName(mainOperand) + "();";
+                    } else {
+                        return "// PERFORM " + rawText;
+                    }
+                case IF:
+                    return "if (" + convertCondition(mainOperand) + ") {";
+                case ELSE:
+                    return "} else {";
+                case END_IF:
+                    return "}";
+                case EVALUATE:
+                    return "switch (" + mainOperand + ") {";
+                case WHEN:
+                    return "case " + mainOperand + ":";
+                case END_EVALUATE:
+                    return "}";
+                case STRING:
+                    return buildStringStatement();
+                case EXEC_SQL:
+                    return "// SQL: " + mainOperand.replaceAll("\\n", "\n// ");
                 case STOP:
-                    return "System.exit(0);";
+                    if (rawText.toUpperCase().contains("STOP RUN")) {
+                        return "System.exit(0);";
+                    }
+                    return "// " + rawText;
                 case GOBACK:
                 case EXIT:
                     return "return;";
                 default:
                     return "// TODO: " + type + " - " + rawText;
             }
+        }
+        
+        private String formatDisplayOperand(String operand) {
+            if (operand == null) return "\"\"";
+            
+            // Handle multiple display items separated by spaces
+            String[] parts = operand.split("\\s+(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+            
+            if (parts.length > 1) {
+                StringBuilder result = new StringBuilder();
+                for (int i = 0; i < parts.length; i++) {
+                    if (i > 0) result.append(" + \" \" + ");
+                    result.append(formatSingleOperand(parts[i]));
+                }
+                return result.toString();
+            }
+            
+            return formatSingleOperand(operand);
+        }
+        
+        private String formatSingleOperand(String operand) {
+            operand = operand.trim();
+            
+            // Already quoted
+            if ((operand.startsWith("\"") && operand.endsWith("\"")) ||
+                (operand.startsWith("'") && operand.endsWith("'"))) {
+                return operand;
+            }
+            
+            // COBOL special values
+            if ("SPACES".equalsIgnoreCase(operand) || "SPACE".equalsIgnoreCase(operand)) {
+                return "\" \"";
+            }
+            if ("ZEROS".equalsIgnoreCase(operand) || "ZERO".equalsIgnoreCase(operand)) {
+                return "\"0\"";
+            }
+            
+            // Variable name
+            return toJavaName(operand);
+        }
+        
+        private String convertCondition(String condition) {
+            if (condition == null) return "true";
+            
+            // Simple conversions
+            condition = condition.replaceAll("\\bNOT\\s*=\\b", "!=");
+            condition = condition.replaceAll("\\b=\\b", "==");
+            condition = condition.replaceAll("\\bAND\\b", "&&");
+            condition = condition.replaceAll("\\bOR\\b", "||");
+            condition = condition.replaceAll("\\bNOT\\b", "!");
+            
+            return condition;
+        }
+        
+        private String buildStringStatement() {
+            if (targetOperand == null) return "// STRING statement incomplete";
+            
+            return "StringBuilder sb = new StringBuilder();\n" +
+                "// STRING components: " + mainOperand + "\n" +
+                targetOperand + " = sb.toString();";
         }
         
         private String toJavaName(String cobolName) {
@@ -112,7 +211,7 @@ public class ProcedureDivision {
             return result.toString();
         }
     }
-    
+
     // Getters and setters
     public List<Section> getSections() { return sections; }
     public void addSection(Section section) { 

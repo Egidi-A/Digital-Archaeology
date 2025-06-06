@@ -20,7 +20,7 @@ public class ProcedureDivisionParser {
         
         Matcher procDivMatcher = procDivPattern.matcher(normalizedSource);
         if (!procDivMatcher.find()) {
-            return procDiv; // Return empty if not found
+            return procDiv;
         }
         
         String procDivContent = procDivMatcher.group(1);
@@ -44,7 +44,6 @@ public class ProcedureDivisionParser {
     }
     
     private void parseSections(String content, ProcedureDivision procDiv) {
-        // Pattern to match sections
         Pattern sectionPattern = Pattern.compile(
             "(\\w+)\\s+SECTION\\s*\\.([^\\n]*(?:\\n(?!\\s*\\w+\\s+SECTION)[^\\n]*)*)",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL
@@ -126,45 +125,158 @@ public class ProcedureDivisionParser {
     }
     
     private void parseStatements(String content, Paragraph paragraph) {
-        // Split by periods but be careful with literals
-        String[] lines = content.split("\\n");
-        StringBuilder currentStatement = new StringBuilder();
-        boolean inQuotes = false;
+        // First, handle EXEC SQL blocks as single units
+        content = preprocessExecSqlBlocks(content);
         
-        for (String line : lines) {
+        // Split into logical lines (handling continuations)
+        List<String> logicalLines = splitIntoLogicalLines(content);
+        
+        // Process each logical line
+        for (String logicalLine : logicalLines) {
+            List<Statement> statements = parseLogicalLine(logicalLine);
+            for (Statement stmt : statements) {
+                if (stmt != null) {
+                    paragraph.addStatement(stmt);
+                }
+            }
+        }
+    }
+    
+    private String preprocessExecSqlBlocks(String content) {
+        // Replace EXEC SQL...END-EXEC blocks with placeholders to prevent splitting
+        Pattern sqlPattern = Pattern.compile(
+            "EXEC\\s+SQL\\s+(.+?)\\s+END-EXEC",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+        );
+        
+        StringBuffer sb = new StringBuffer();
+        Matcher matcher = sqlPattern.matcher(content);
+        int sqlBlockCount = 0;
+        
+        while (matcher.find()) {
+            String sqlContent = matcher.group(1);
+            // Replace newlines with special marker to preserve them
+            sqlContent = sqlContent.replaceAll("\\n", "~NEWLINE~");
+            String placeholder = "~EXECSQL~" + sqlBlockCount + "~" + sqlContent + "~ENDEXECSQL~";
+            matcher.appendReplacement(sb, placeholder);
+            sqlBlockCount++;
+        }
+        matcher.appendTail(sb);
+        
+        return sb.toString();
+    }
+    
+    private List<String> splitIntoLogicalLines(String content) {
+        List<String> logicalLines = new ArrayList<>();
+        String[] physicalLines = content.split("\\n");
+        StringBuilder currentLogicalLine = new StringBuilder();
+        
+        for (String line : physicalLines) {
             line = line.trim();
             if (line.isEmpty()) continue;
             
-            // Check for quotes
-            for (char c : line.toCharArray()) {
-                if (c == '"' || c == '\'') {
-                    inQuotes = !inQuotes;
-                }
+            // Check if this line is a continuation
+            if (currentLogicalLine.length() > 0) {
+                currentLogicalLine.append(" ");
             }
+            currentLogicalLine.append(line);
             
-            currentStatement.append(line).append(" ");
-            
-            // If line ends with period and not in quotes, it's end of statement
-            if (line.endsWith(".") && !inQuotes) {
-                String stmtText = currentStatement.toString().trim();
-                if (!stmtText.isEmpty()) {
-                    Statement stmt = parseStatement(stmtText);
-                    if (stmt != null) {
-                        paragraph.addStatement(stmt);
-                    }
-                }
-                currentStatement = new StringBuilder();
+            // Check if we've completed a logical line (ends with period not in quotes)
+            if (endsWithPeriod(line)) {
+                logicalLines.add(currentLogicalLine.toString());
+                currentLogicalLine = new StringBuilder();
             }
         }
         
-        // Handle any remaining content
-        String remaining = currentStatement.toString().trim();
-        if (!remaining.isEmpty()) {
-            Statement stmt = parseStatement(remaining);
-            if (stmt != null) {
-                paragraph.addStatement(stmt);
+        // Add any remaining content
+        if (currentLogicalLine.length() > 0) {
+            logicalLines.add(currentLogicalLine.toString());
+        }
+        
+        return logicalLines;
+    }
+    
+    private boolean endsWithPeriod(String line) {
+        if (line.isEmpty()) return false;
+        
+        // Count quotes to see if we're in a string literal
+        int quoteCount = 0;
+        for (char c : line.toCharArray()) {
+            if (c == '"' || c == '\'') quoteCount++;
+        }
+        
+        // If odd number of quotes, we're inside a string
+        if (quoteCount % 2 == 1) return false;
+        
+        // Check if line ends with period
+        return line.matches(".*\\.\\s*$");
+    }
+    
+    private List<Statement> parseLogicalLine(String logicalLine) {
+        List<Statement> statements = new ArrayList<>();
+        
+        // Handle multiple statements on one line separated by specific keywords
+        List<String> statementTexts = splitByStatementKeywords(logicalLine);
+        
+        for (String stmtText : statementTexts) {
+            stmtText = stmtText.trim();
+            if (!stmtText.isEmpty()) {
+                Statement stmt = parseStatement(stmtText);
+                if (stmt != null) {
+                    statements.add(stmt);
+                }
             }
         }
+        
+        return statements;
+    }
+    
+    private List<String> splitByStatementKeywords(String line) {
+        List<String> statements = new ArrayList<>();
+        
+        // Keywords that start new statements
+        String[] keywords = {
+            "DISPLAY", "MOVE", "ACCEPT", "PERFORM", "IF", "ELSE", 
+            "END-IF", "EVALUATE", "WHEN", "END-EVALUATE", "COMPUTE",
+            "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "STRING", "UNSTRING",
+            "OPEN", "CLOSE", "READ", "WRITE", "EXIT", "STOP", "GOBACK"
+        };
+        
+        // Build pattern for statement keywords
+        StringBuilder patternBuilder = new StringBuilder("\\b(");
+        for (int i = 0; i < keywords.length; i++) {
+            if (i > 0) patternBuilder.append("|");
+            patternBuilder.append(keywords[i]);
+        }
+        patternBuilder.append(")\\b");
+        
+        Pattern keywordPattern = Pattern.compile(patternBuilder.toString(), Pattern.CASE_INSENSITIVE);
+        Matcher matcher = keywordPattern.matcher(line);
+        
+        int lastEnd = 0;
+        while (matcher.find()) {
+            if (matcher.start() > lastEnd) {
+                // Add any content before this keyword to previous statement
+                if (statements.size() > 0 && lastEnd < matcher.start()) {
+                    String lastStmt = statements.get(statements.size() - 1);
+                    statements.set(statements.size() - 1, 
+                        lastStmt + " " + line.substring(lastEnd, matcher.start()).trim());
+                }
+            }
+            lastEnd = matcher.start();
+        }
+        
+        // Add the last part
+        if (lastEnd < line.length()) {
+            statements.add(line.substring(lastEnd).trim());
+        }
+        
+        // If no keywords found, treat entire line as one statement
+        if (statements.isEmpty()) {
+            statements.add(line);
+        }
+        
+        return statements;
     }
     
     private Statement parseStatement(String statementText) {
@@ -172,6 +284,9 @@ public class ProcedureDivisionParser {
         
         // Remove trailing period
         statementText = statementText.replaceAll("\\.$", "").trim();
+        
+        // Restore EXEC SQL blocks
+        statementText = restoreExecSqlBlocks(statementText);
         
         // Determine statement type
         Statement.StatementType type = identifyStatementType(statementText);
@@ -194,10 +309,40 @@ public class ProcedureDivisionParser {
             case COMPUTE:
                 parseComputeStatement(statementText, stmt);
                 break;
+            case IF:
+                parseIfStatement(statementText, stmt);
+                break;
+            case EVALUATE:
+                parseEvaluateStatement(statementText, stmt);
+                break;
+            case STRING:
+                parseStringStatement(statementText, stmt);
+                break;
+            case EXEC_SQL:
+                parseExecSqlStatement(statementText, stmt);
+                break;
             // Add more as needed
         }
         
         return stmt;
+    }
+    
+    private String restoreExecSqlBlocks(String text) {
+        // Restore EXEC SQL blocks from placeholders
+        Pattern placeholderPattern = Pattern.compile("~EXECSQL~\\d+~(.+?)~ENDEXECSQL~");
+        Matcher matcher = placeholderPattern.matcher(text);
+        
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String sqlContent = matcher.group(1);
+            // Restore newlines
+            sqlContent = sqlContent.replaceAll("~NEWLINE~", "\n");
+            String replacement = "EXEC SQL " + sqlContent + " END-EXEC";
+            matcher.appendReplacement(sb, replacement);
+        }
+        matcher.appendTail(sb);
+        
+        return sb.toString();
     }
     
     private Statement.StatementType identifyStatementType(String text) {
@@ -214,6 +359,9 @@ public class ProcedureDivisionParser {
         if (upperText.startsWith("SUBTRACT")) return Statement.StatementType.SUBTRACT;
         if (upperText.startsWith("MULTIPLY")) return Statement.StatementType.MULTIPLY;
         if (upperText.startsWith("DIVIDE")) return Statement.StatementType.DIVIDE;
+        if (upperText.startsWith("STRING")) return Statement.StatementType.STRING;
+        if (upperText.startsWith("EXEC SQL") || upperText.contains("~EXECSQL~")) 
+            return Statement.StatementType.EXEC_SQL;
         if (upperText.startsWith("OPEN")) return Statement.StatementType.OPEN;
         if (upperText.startsWith("CLOSE")) return Statement.StatementType.CLOSE;
         if (upperText.startsWith("READ")) return Statement.StatementType.READ;
@@ -221,12 +369,15 @@ public class ProcedureDivisionParser {
         if (upperText.startsWith("EXIT")) return Statement.StatementType.EXIT;
         if (upperText.startsWith("STOP")) return Statement.StatementType.STOP;
         if (upperText.startsWith("GOBACK")) return Statement.StatementType.GOBACK;
+        if (upperText.startsWith("ELSE")) return Statement.StatementType.ELSE;
+        if (upperText.startsWith("END-IF")) return Statement.StatementType.END_IF;
+        if (upperText.startsWith("WHEN")) return Statement.StatementType.WHEN;
+        if (upperText.startsWith("END-EVALUATE")) return Statement.StatementType.END_EVALUATE;
         
         return Statement.StatementType.UNKNOWN;
     }
     
     private void parseMoveStatement(String text, Statement stmt) {
-        // Pattern: MOVE source TO target
         Pattern movePattern = Pattern.compile(
             "MOVE\\s+(.+?)\\s+TO\\s+(.+)",
             Pattern.CASE_INSENSITIVE
@@ -240,20 +391,25 @@ public class ProcedureDivisionParser {
     }
     
     private void parseDisplayStatement(String text, Statement stmt) {
-        // Pattern: DISPLAY value
+        // Handle DISPLAY with multiple values and WITH NO ADVANCING
         Pattern displayPattern = Pattern.compile(
-            "DISPLAY\\s+(.+)",
+            "DISPLAY\\s+(.+?)(?:\\s+WITH\\s+NO\\s+ADVANCING)?$",
             Pattern.CASE_INSENSITIVE
         );
         
         Matcher matcher = displayPattern.matcher(text);
         if (matcher.find()) {
-            stmt.setMainOperand(cleanOperand(matcher.group(1)));
+            String displayContent = matcher.group(1);
+            stmt.setMainOperand(displayContent.trim());
+            
+            // Check for WITH NO ADVANCING
+            if (text.toUpperCase().contains("WITH NO ADVANCING")) {
+                stmt.addAttribute("NO_ADVANCING", "true");
+            }
         }
     }
     
     private void parseAcceptStatement(String text, Statement stmt) {
-        // Pattern: ACCEPT variable [FROM source]
         Pattern acceptPattern = Pattern.compile(
             "ACCEPT\\s+(\\S+)(?:\\s+FROM\\s+(.+))?",
             Pattern.CASE_INSENSITIVE
@@ -269,23 +425,48 @@ public class ProcedureDivisionParser {
     }
     
     private void parsePerformStatement(String text, Statement stmt) {
-        // Pattern: PERFORM paragraph-name [THRU paragraph-name] [TIMES/UNTIL/VARYING]
-        Pattern performPattern = Pattern.compile(
+        // First check for PERFORM UNTIL (without paragraph name)
+        Pattern untilPattern = Pattern.compile(
+            "PERFORM\\s+UNTIL\\s+(.+)",
+            Pattern.CASE_INSENSITIVE
+        );
+        
+        Matcher untilMatcher = untilPattern.matcher(text);
+        if (untilMatcher.find()) {
+            stmt.addAttribute("UNTIL", untilMatcher.group(1).trim());
+            stmt.setMainOperand("INLINE"); // Mark as inline PERFORM
+            return;
+        }
+        
+        // Check for PERFORM n TIMES
+        Pattern timesPattern = Pattern.compile(
+            "PERFORM\\s+(.+)\\s+TIMES",
+            Pattern.CASE_INSENSITIVE
+        );
+        
+        Matcher timesMatcher = timesPattern.matcher(text);
+        if (timesMatcher.find()) {
+            stmt.addAttribute("TIMES", timesMatcher.group(1).trim());
+            stmt.setMainOperand("INLINE"); // Mark as inline PERFORM
+            return;
+        }
+        
+        // Standard PERFORM paragraph-name [THRU paragraph-name]
+        Pattern standardPattern = Pattern.compile(
             "PERFORM\\s+(\\S+)(?:\\s+THRU\\s+(\\S+))?",
             Pattern.CASE_INSENSITIVE
         );
         
-        Matcher matcher = performPattern.matcher(text);
-        if (matcher.find()) {
-            stmt.setMainOperand(cleanOperand(matcher.group(1)));
-            if (matcher.group(2) != null) {
-                stmt.setTargetOperand(cleanOperand(matcher.group(2)));
+        Matcher standardMatcher = standardPattern.matcher(text);
+        if (standardMatcher.find()) {
+            stmt.setMainOperand(cleanOperand(standardMatcher.group(1)));
+            if (standardMatcher.group(2) != null) {
+                stmt.setTargetOperand(cleanOperand(standardMatcher.group(2)));
             }
         }
     }
     
     private void parseComputeStatement(String text, Statement stmt) {
-        // Pattern: COMPUTE target = expression
         Pattern computePattern = Pattern.compile(
             "COMPUTE\\s+(\\S+)\\s*=\\s*(.+)",
             Pattern.CASE_INSENSITIVE
@@ -298,14 +479,70 @@ public class ProcedureDivisionParser {
         }
     }
     
+    private void parseIfStatement(String text, Statement stmt) {
+        // Extract condition from IF statement
+        Pattern ifPattern = Pattern.compile(
+            "IF\\s+(.+?)(?=\\s+(?:THEN|$))",
+            Pattern.CASE_INSENSITIVE
+        );
+        
+        Matcher matcher = ifPattern.matcher(text);
+        if (matcher.find()) {
+            stmt.setMainOperand(matcher.group(1).trim());
+        }
+    }
+    
+    private void parseEvaluateStatement(String text, Statement stmt) {
+        // Extract what is being evaluated
+        Pattern evalPattern = Pattern.compile(
+            "EVALUATE\\s+(.+?)(?=\\s+(?:WHEN|$))",
+            Pattern.CASE_INSENSITIVE
+        );
+        
+        Matcher matcher = evalPattern.matcher(text);
+        if (matcher.find()) {
+            stmt.setMainOperand(matcher.group(1).trim());
+        }
+    }
+    
+    private void parseStringStatement(String text, Statement stmt) {
+        // Parse STRING statement - simplified for now
+        if (text.toUpperCase().contains("INTO")) {
+            Pattern stringPattern = Pattern.compile(
+                "STRING\\s+(.+?)\\s+INTO\\s+(\\S+)",
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+            );
+            
+            Matcher matcher = stringPattern.matcher(text);
+            if (matcher.find()) {
+                stmt.setMainOperand(matcher.group(1).trim());
+                stmt.setTargetOperand(matcher.group(2).trim());
+            }
+        }
+    }
+    
+    private void parseExecSqlStatement(String text, Statement stmt) {
+        // Extract SQL content
+        Pattern sqlPattern = Pattern.compile(
+            "EXEC\\s+SQL\\s+(.+?)\\s+END-EXEC",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+        );
+        
+        Matcher matcher = sqlPattern.matcher(text);
+        if (matcher.find()) {
+            stmt.setMainOperand(matcher.group(1).trim());
+        }
+    }
+    
     private String cleanOperand(String operand) {
         if (operand == null) return null;
         
-        // Remove quotes if it's a literal
         operand = operand.trim();
+        
+        // Keep quotes for literals
         if ((operand.startsWith("\"") && operand.endsWith("\"")) ||
             (operand.startsWith("'") && operand.endsWith("'"))) {
-            return operand;  // Keep quotes for literals
+            return operand;
         }
         
         // Clean up variable names
