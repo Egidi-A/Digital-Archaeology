@@ -3,6 +3,9 @@ package com.cobolconverter.generator;
 import com.cobolconverter.model.CobolProgram;
 import com.cobolconverter.model.IdentificationDivision;
 import com.cobolconverter.model.EnvironmentDivision;
+import com.cobolconverter.model.DataDivision;
+import com.cobolconverter.model.DataDivision.DataItem;
+
 
 public class JavaCodeGenerator {
     
@@ -11,8 +14,14 @@ public class JavaCodeGenerator {
         
         IdentificationDivision idDiv = program.getIdentificationDivision();
         EnvironmentDivision envDiv = program.getEnvironmentDivision();
+        DataDivision dataDiv = program.getDataDivision();
         
-        // Generate JavaDoc from Identification Division
+        /***********************************************************************************************
+        * IDENTIFICATION DIVISION
+        ************************************************************************************************/
+
+        //----------------------------------------------------------------------------------------------
+        // JavaDoc
         sb.append("/**\n");
         if (idDiv.getAuthor() != null) {
             sb.append(" * @author ").append(idDiv.getAuthor()).append("\n");
@@ -32,27 +41,69 @@ public class JavaCodeGenerator {
         sb.append(" * Generated from COBOL program\n");
         sb.append(" */\n");
         
-        // Generate class declaration
+        // Class Declaration
         String className = toCamelCase(idDiv.getProgramId());
         sb.append("public class ").append(className).append(" {\n");
         sb.append("    \n");
         sb.append("    // Program ID: ").append(idDiv.getProgramId()).append("\n");
+
+        //----------------------------------------------------------------------------------------------
         
+        /***********************************************************************************************
+        * ENVIRONMENT DIVISION
+        ************************************************************************************************/    
+
+        //----------------------------------------------------------------------------------------------
         // Add Environment Division info as comments
         if (envDiv != null) {
             sb.append(envDiv.toJavaComment());
         }
         
-        sb.append("    \n");
+
+        //----------------------------------------------------------------------------------------------
+
+        /***********************************************************************************************
+        * DATA DIVISION
+        ************************************************************************************************/
+
+        //----------------------------------------------------------------------------------------------
+        // Add Data Division info
+        if (dataDiv != null) {
+            sb.append(dataDiv.toJavaComment());
+            sb.append("    \n");
+            
+            // Generate fields from Working-Storage items
+            if (!dataDiv.getWorkingStorageItems().isEmpty()) {
+                sb.append("    // Working-Storage Fields\n");
+                for (DataItem item : dataDiv.getWorkingStorageItems()) {
+                    // Skip 88-level condition names for now
+                    if (!"88".equals(item.getLevel())) {
+                        sb.append(item.toJavaField()).append("\n");
+                    }
+                }
+                sb.append("    \n");
+            }
+        }
+        
         sb.append("    public static void main(String[] args) {\n");
         sb.append("        // Main program logic goes here\n");
         sb.append("        System.out.println(\"").append(className).append(" - Generated from COBOL\");\n");
         sb.append("    }\n");
         sb.append("}\n");
+
+        //----------------------------------------------------------------------------------------------
         
+        // Return the generated Java code as a string
         return sb.toString();
     }
     
+
+
+
+
+    /************************************************************************************************
+     * FUNZIONI DI SUPPORTO
+     ************************************************************************************************/
     private String toCamelCase(String cobolName) {
         if (cobolName == null) return "UnnamedProgram";
         

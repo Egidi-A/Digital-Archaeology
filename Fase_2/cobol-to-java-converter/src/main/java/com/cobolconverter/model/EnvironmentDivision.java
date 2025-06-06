@@ -28,7 +28,7 @@ public class EnvironmentDivision {
     
     public String toJavaComment() {
         StringBuilder sb = new StringBuilder();
-        sb.append("    // Environment Configuration\n");
+        sb.append("    // Environment Division\n");
         if (sourceComputer != null) {
             sb.append("    // Source Computer: ").append(sourceComputer).append("\n");
         }
@@ -37,6 +37,9 @@ public class EnvironmentDivision {
         }
         if (fileControl != null) {
             sb.append("    // File Control: Present\n");
+        }
+        if (ioControl != null) {
+            sb.append("    // Input/Output Control: Present\n");
         }
         return sb.toString();
     }

@@ -8,9 +8,20 @@
 public class CustomerReport {
     
     // Program ID: CUSTOMER-REPORT
-    // Environment Configuration
+    // Environment Division
     // Source Computer: IBM-370
     // Object Computer: IBM-370
+    // Data Division
+    // Working-Storage: 7 items
+    
+    // Working-Storage Fields
+    private String wsCustomerName; // PIC X(30)
+    private int wsCustomerId; // PIC 9(6)
+    private double wsTotalSales; // PIC 9(7)V99
+    private Object wsDate; // PIC GROUP
+    private int wsYear; // PIC 9(4)
+    private int wsMonth; // PIC 9(2)
+    private int wsDay; // PIC 9(2)
     
     public static void main(String[] args) {
         // Main program logic goes here

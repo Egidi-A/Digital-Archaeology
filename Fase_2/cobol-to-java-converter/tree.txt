@@ -11,14 +11,19 @@
 │   │   │           │   └── JavaCodeGenerator.java
 │   │   │           ├── model
 │   │   │           │   ├── CobolProgram.java
+│   │   │           │   ├── DataDivision.java
 │   │   │           │   ├── EnvironmentDivision.java
 │   │   │           │   └── IdentificationDivision.java
 │   │   │           └── parser
+│   │   │               ├── DataDivisionParser.java
 │   │   │               ├── EnvironmentDivisionParser.java
 │   │   │               └── IdentificationDivisionParser.java
 │   │   └── resources
 │   │       └── templates
 │   └── test
+│       ├── bank_system_cobol.cbl
+│       ├── bank_system_cobol.java
+│       ├── GestioneConti.java
 │       ├── hello.cbl
 │       └── hello.java
 ├── target
@@ -32,9 +37,12 @@
 │   │           │   └── JavaCodeGenerator.class
 │   │           ├── model
 │   │           │   ├── CobolProgram.class
+│   │           │   ├── DataDivision$DataItem.class
+│   │           │   ├── DataDivision.class
 │   │           │   ├── EnvironmentDivision.class
 │   │           │   └── IdentificationDivision.class
 │   │           └── parser
+│   │               ├── DataDivisionParser.class
 │   │               ├── EnvironmentDivisionParser.class
 │   │               └── IdentificationDivisionParser.class
 │   ├── cobol-to-java-converter-1.0.0.jar
@@ -50,4 +58,4 @@
 │                   └── inputFiles.lst
 └── tree.txt
 
-27 directories, 24 files
+27 directories, 32 files

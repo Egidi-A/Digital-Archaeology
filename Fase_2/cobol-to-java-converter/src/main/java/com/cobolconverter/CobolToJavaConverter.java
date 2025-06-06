@@ -28,6 +28,9 @@ public class CobolToJavaConverter {
             
             EnvironmentDivisionParser envParser = new EnvironmentDivisionParser();
             program.setEnvironmentDivision(envParser.parse(normalizedSource));
+
+            DataDivisionParser dataParser = new DataDivisionParser();
+            program.setDataDivision(dataParser.parse(normalizedSource));
             
             // Generate Java code
             JavaCodeGenerator generator = new JavaCodeGenerator();
