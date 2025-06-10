@@ -54,7 +54,54 @@
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-compiler-plugin</artifactId>
                <version>3.11.0</version>
+               <configuration>
+                   <source>${maven.compiler.source}</source>
+                   <target>${maven.compiler.target}</target>
+                   <encoding>${project.build.sourceEncoding}</encoding>
+               </configuration>
+           </plugin>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-javadoc-plugin</artifactId>
+               <version>3.5.0</version>
+               <configuration>
+                   <source>${maven.compiler.source}</source>
+                   <encoding>${project.build.sourceEncoding}</encoding>
+                   <docencoding>${project.build.sourceEncoding}</docencoding>
+                   <charset>${project.build.sourceEncoding}</charset>
+                   <show>private</show>
+                   <sourcepath>src</sourcepath>
+                   <failOnError>false</failOnError>
+                   <additionalJOptions>
+                       <additionalJOption>-Xdoclint:none</additionalJOption>
+                   </additionalJOptions>
+               </configuration>
+               <executions>
+                   <execution>
+                       <id>attach-javadocs</id>
+                       <goals>
+                           <goal>jar</goal>
+                       </goals>
+                   </execution>
+               </executions>
            </plugin>
        </plugins>
    </build>
+   
+   <reporting>
+       <plugins>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-javadoc-plugin</artifactId>
+               <version>3.5.0</version>
+               <configuration>
+                   <show>private</show>
+                   <encoding>${project.build.sourceEncoding}</encoding>
+                   <docencoding>${project.build.sourceEncoding}</docencoding>
+                   <charset>${project.build.sourceEncoding}</charset>
+                   <sourcepath>src</sourcepath>
+               </configuration>
+           </plugin>
+       </plugins>
+   </reporting>
 </project>

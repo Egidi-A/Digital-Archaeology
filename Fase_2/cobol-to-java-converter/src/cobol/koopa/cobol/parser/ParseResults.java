@@ -81,6 +81,15 @@ public class ParseResults {
 	}
 
 	public Parse getParse() {
-		return parse;
-	}
+		return this.parse;
+	}    @SuppressWarnings("unchecked")
+    public Object getTree() {
+        if (this.parse == null) return null;
+        try {
+            // Note: We need to return the raw parse target since Tree doesn't implement Target
+            return this.parse.getFlow().getSource();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

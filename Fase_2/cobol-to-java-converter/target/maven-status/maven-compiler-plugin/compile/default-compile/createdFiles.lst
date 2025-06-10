@@ -6,6 +6,7 @@ koopa/core/trees/TreeWalker$State.class
 koopa/core/streams/BaseStream$Bookmark.class
 koopa/core/util/Iterators$3.class
 koopa/cobol/parser/preprocessing/replacing/ReplacingPhrase$Mode.class
+com/DigArch/cobol2java/ast/mapping/DataTypeMapper.class
 koopa/core/trees/TreeWalker$1.class
 koopa/core/util/ClassVersionChecker.class
 koopa/core/grammars/combinators/TestForKeyword.class
@@ -17,6 +18,7 @@ koopa/core/grammars/combinators/Dispatched.class
 koopa/cobol/grammar/preprocessing/CobolPreprocessingBaseGrammar.class
 koopa/core/grammars/combinators/MatchLiteral.class
 koopa/core/util/JVM$1.class
+com/DigArch/cobol2java/output/JavaCodeGenerator.class
 koopa/core/data/tags/AreaTag.class
 koopa/core/trees/Tree$1.class
 koopa/core/grammars/fluent/FluentGrammar$6.class
@@ -65,6 +67,7 @@ koopa/core/parsers/combinators/Permuted.class
 koopa/core/data/markers/Start.class
 koopa/core/parsers/combinators/Counting.class
 koopa/core/grammars/fluent/FluentGrammar$13.class
+com/DigArch/cobol2java/ast/mapping/CobolToJavaMapper.class
 koopa/core/streams/BaseStream$1.class
 koopa/cobol/projects/IsCopybookNamed.class
 koopa/core/trees/jaxen/XPathException.class
@@ -75,6 +78,7 @@ koopa/core/grammars/combinators/TestProgramText.class
 koopa/core/grammars/fluent/FluentGrammar$16.class
 koopa/core/parsers/combinators/NotEmpty.class
 koopa/core/data/tags/IslandTag.class
+com/DigArch/cobol2java/model/JavaField.class
 koopa/core/sources/StackOfSources.class
 koopa/cobol/parser/preprocessing/replacing/ReplaceLeading.class
 koopa/core/streams/StreamDecorator.class
@@ -93,16 +97,20 @@ koopa/core/trees/jaxen/KoopaXPath.class
 koopa/core/sources/TagAll.class
 koopa/cobol/util/CobolSupport$1.class
 koopa/core/trees/TreeSource.class
+com/DigArch/cobol2java/model/JavaClass.class
+com/DigArch/cobol2java/model/JavaMethod$Parameter.class
 koopa/core/parsers/FutureParser.class
 koopa/core/data/Token.class
 koopa/core/trees/KoopaTreeBuilder.class
 koopa/cobol/util/CopybookPaths.class
+com/DigArch/cobol2java/ast/visitor/CobolTreeVisitor.class
 koopa/core/targets/ListTarget.class
 koopa/core/grammars/fluent/FluentGrammar$14.class
 koopa/core/parsers/combinators/LimitedTo.class
 koopa/cobol/parser/preprocessing/replacing/ReplacingPhrase.class
 koopa/cobol/parser/preprocessing/replacing/ReplaceNone.class
 koopa/core/data/markers/End.class
+com/DigArch/cobol2java/CobolToJavaTranslator.class
 koopa/core/parsers/combinators/NotNested.class
 koopa/core/trees/jaxen/TreeAttribute.class
 koopa/core/grammars/fluent/FluentGrammar$8.class
@@ -131,6 +139,7 @@ koopa/core/util/Files.class
 koopa/core/grammars/combinators/MatchNumber.class
 koopa/core/util/JVM.class
 koopa/cobol/CobolWords.class
+com/DigArch/cobol2java/ast/visitor/VisitorContext.class
 koopa/core/grammars/fluent/FluentGrammar$3.class
 koopa/core/trees/TreeWalker.class
 koopa/cobol/sources/CompilerDirectives.class
@@ -196,6 +205,8 @@ koopa/core/grammars/combinators/TestForCase.class
 koopa/cobol/parser/ParseResults.class
 koopa/core/grammars/fluent/FluentGrammar$2.class
 koopa/core/grammars/combinators/MatchAny.class
+com/DigArch/cobol2java/ast/mapping/StatementMapper.class
+com/DigArch/cobol2java/model/JavaMethod.class
 koopa/core/trees/jaxen/ChildAxisIterator.class
 koopa/core/util/Iterables.class
 koopa/core/data/Data.class
@@ -218,6 +229,7 @@ koopa/core/data/markers/InWater.class
 koopa/core/grammars/fluent/FluentGrammar$1.class
 koopa/core/data/Marker.class
 koopa/core/trees/jaxen/ParentAxisIterator.class
+com/DigArch/cobol2java/ast/builders/JavaASTBuilder.class
 koopa/core/grammars/fluent/FluentGrammar$NamedDefinition.class
 koopa/core/parsers/combinators/Nested.class
 koopa/core/sources/LineSplitter.class
@@ -226,6 +238,7 @@ koopa/cobol/copybooks/CopybookLocator.class
 koopa/core/data/markers/OnLand.class
 koopa/core/parsers/combinators/Choice.class
 koopa/core/data/Position.class
+com/DigArch/cobol2java/ast/builders/JavaClassBuilder.class
 koopa/core/util/FilenameFilters.class
 koopa/core/trees/jaxen/Jaxen.class
 koopa/core/sources/Sources.class
