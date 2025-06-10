@@ -37,6 +37,11 @@ public class CobolToJavaTranslator {
         this.parser = new CobolParser();
         this.visitor = new CobolTreeVisitor();
         this.generator = new JavaCodeGenerator();
+        
+        // Set up a basic COBOL project and enable AST generation
+        this.parser.setProject(new koopa.cobol.projects.BasicCobolProject());
+        this.parser.setBuildTrees(true);
+        this.parser.setKeepingTrackOfTokens(true); // Required for proper source mapping
     }
     
     /**
@@ -59,11 +64,10 @@ public class CobolToJavaTranslator {
         }
         
         // Get AST
-        Object treeObj = results.getTree();
-        if (!(treeObj instanceof Tree)) {
+        Tree ast = results.getTreeUsingDefaultProgramArea();
+        if (ast == null) {
             throw new IllegalStateException("Failed to parse COBOL file: AST not available");
         }
-        Tree ast = (Tree) treeObj;
         
         // Visit AST and build Java model
         JavaClass javaClass = visitor.visit(ast);
