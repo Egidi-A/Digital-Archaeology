@@ -23,7 +23,10 @@ mvn clean package
 java -jar target/cobol-to-java-converter-1.0.0.jar src/test/hello.cbl
 # Output will be created as myprogram.java in the same directory
 ```
-
+Running easy jar (koopa f.e.):
+```bash
+java -jar koopa.jar
+```
 ## Generazione documentazione Java
 ```bash
 javadoc -d doc src/main/java/com/cobolconverter/model/CobolProgram.java
