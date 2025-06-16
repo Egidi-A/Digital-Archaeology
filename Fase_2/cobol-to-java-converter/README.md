@@ -44,13 +44,15 @@ cobol-to-java-converter/
 │       │       └── example/
 │       │           ├── CobolToJavaConverter.java    # Main class
 │       │           ├── ASTToXMLExporter.java       # Esporta AST in XML
-│       │           └── ASTVisitorExample.java      # Visitor pattern
+│       │           ├── ASTVisitorExample.java      # Visitor pattern
+│       │           └── CobolToJavaXMLTransformer.java # Trasforma XML COBOL → Java
 │       └── resources/
 │           └── cobol/
 │               ├── example.cbl                      # Hello World COBOL
 │               └── employee.cbl                     # Employee manager COBOL
 └── output/
-    └── ast.xml                                      # Output XML generato
+    ├── ast.xml                                      # ASG COBOL in XML
+    └── java-ast.xml                                 # ASG Java in XML
 ```
 
 ## Utilizzo
@@ -79,17 +81,29 @@ File cobolFile = new File("src/main/resources/cobol/employee.cbl");
 ASTToXMLExporter.exportToXML(program, "output/employee-ast.xml");
 ```
 
-Il file XML conterrà:
-- Compilation units
-- Program units con ID
-- Data Division con variabili e livelli
-- Procedure Division con paragrafi e statement
+### Trasformare XML COBOL in XML Java
+
+```bash
+mvn exec:java -Dexec.mainClass="com.example.CobolToJavaXMLTransformer"
+```
+
+Questo comando:
+1. Legge `output/ast.xml` (ASG COBOL)
+2. Trasforma la struttura in equivalente Java
+3. Genera `output/java-ast.xml` (ASG Java)
+
+Mappatura XML:
+- program-unit → class
+- data-entry → field + getter/setter  
+- paragraph → method
+- statement → Java statement equivalente
 
 ## Funzionalità
 
 - **Parsing COBOL**: Analizza file COBOL e genera AST/ASG
 - **Export XML**: Esporta la struttura AST in formato XML
 - **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
+- **Trasformazione XML**: Converte ASG COBOL in ASG Java
 - **Supporto formati**: FIXED, VARIABLE, TANDEM
 
 ## Esempi COBOL
