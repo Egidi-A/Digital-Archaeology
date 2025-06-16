@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'com.DigArch.cobol2java'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = '21'
+targetCompatibility = '21'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.11'
+}
+
+application {
+    mainClass = 'com.DigArch.cobol2java.MainFileParsing'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.DigArch.cobol2java.MainFileParsing'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
