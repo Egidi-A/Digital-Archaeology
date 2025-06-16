@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<cobol-program>
+  <compilation-unit name="Example">
+    <program-unit name="HELLO-WORLD">
+      <identification-division program-id="HELLO-WORLD"/>
+      <data-division>
+        <working-storage-section>
+          <data-entry level="1" name="WS-MESSAGE"/>
+        </working-storage-section>
+      </data-division>
+      <procedure-division/>
+    </program-unit>
+  </compilation-unit>
+</cobol-program>

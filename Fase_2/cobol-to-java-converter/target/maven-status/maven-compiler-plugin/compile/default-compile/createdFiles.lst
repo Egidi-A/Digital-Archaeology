@@ -1,7 +1,0 @@
-com/cobolconverter/CobolToJavaConverter.class
-com/cobolconverter/model/CobolProgram.class
-com/cobolconverter/model/IdentificationDivision.class
-com/cobolconverter/parser/IdentificationDivisionParser.class
-com/cobolconverter/generator/JavaCodeGenerator.class
-com/cobolconverter/model/EnvironmentDivision.class
-com/cobolconverter/parser/EnvironmentDivisionParser.class
