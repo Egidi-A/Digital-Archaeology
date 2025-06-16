@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<cobol-program>
+  <compilation-unit name="Employee">
+    <program-unit name="EMPLOYEE-MANAGER">
+      <identification-division program-id="EMPLOYEE-MANAGER"/>
+      <data-division>
+        <working-storage-section>
+          <data-entry level="1" name="WS-EMPLOYEE"/>
+          <data-entry level="5" name="WS-EMP-ID"/>
+          <data-entry level="5" name="WS-EMP-NAME"/>
+          <data-entry level="5" name="WS-EMP-SALARY"/>
+          <data-entry level="5" name="WS-EMP-DEPT"/>
+          <data-entry level="1" name="WS-COUNTERS"/>
+          <data-entry level="5" name="WS-TOTAL-SALARY"/>
+          <data-entry level="5" name="WS-EMP-COUNT"/>
+          <data-entry level="1" name="WS-FLAGS"/>
+          <data-entry level="5" name="WS-EOF"/>
+        </working-storage-section>
+      </data-division>
+      <procedure-division>
+        <paragraph name="MAIN-PARAGRAPH">
+          <statement type="PERFORM"/>
+          <statement type="PERFORM"/>
+          <statement type="PERFORM"/>
+          <statement type="STOP"/>
+        </paragraph>
+        <paragraph name="INIT-PARAGRAPH">
+          <statement type="DISPLAY"/>
+          <statement type="MOVE"/>
+          <statement type="MOVE"/>
+        </paragraph>
+        <paragraph name="PROCESS-EMPLOYEES">
+          <statement type="MOVE"/>
+          <statement type="MOVE"/>
+          <statement type="MOVE"/>
+          <statement type="MOVE"/>
+          <statement type="ADD"/>
+          <statement type="ADD"/>
+          <statement type="DISPLAY"/>
+          <statement type="DISPLAY"/>
+        </paragraph>
+        <paragraph name="DISPLAY-RESULTS">
+          <statement type="DISPLAY"/>
+          <statement type="DISPLAY"/>
+        </paragraph>
+      </procedure-division>
+    </program-unit>
+  </compilation-unit>
+</cobol-program>
