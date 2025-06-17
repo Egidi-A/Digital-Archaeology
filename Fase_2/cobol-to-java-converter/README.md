@@ -100,7 +100,7 @@ Mappatura XML:
 
 ## Funzionalità
 
-- **Parsing COBOL**: Analizza file COBOL e genera AST/ASG
+- **Parsing COBOL**: Analizza file COBOL e genera AST/ASG (Abstract Syntax Tree / Abstract Syntax Graph)
 - **Export XML**: Esporta la struttura AST in formato XML
 - **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
 - **Trasformazione XML**: Converte ASG COBOL in ASG Java
@@ -123,20 +123,18 @@ Mappatura XML:
 ### employee.cbl
 Esempio più complesso con strutture dati gerarchiche e paragrafi multipli.
 
-## Output
-
-Il converter genera un file XML in `output/ast.xml` contenente:
+## Output XML COBOL
+Il file XML generato contiene la rappresentazione dell'AST del codice COBOL, con dettagli su:
 - Struttura delle divisioni COBOL
 - Variabili e tipi di dato
 - Paragrafi e statement
+Il converter genera un file XML in `output/ast.xml`.
+
 
 ## Estensioni Future
 
-- [ ] Generazione codice Java
+- [ ] Generazione codice Java (sorgente) tramite chiamate API Gemini
 - [ ] Supporto COPY statements
-- [ ] Analisi data flow
-- [ ] Conversione tipi COBOL → Java
+- [ ] Conversione tipi COBOL → Java?
 
 ## License
-
-MIT
