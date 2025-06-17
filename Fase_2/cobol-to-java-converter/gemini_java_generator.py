@@ -23,12 +23,12 @@ def generate_java_code(xml_content):
         "temperature": 0.2,  # Bassa per codice più deterministico
         "top_p": 0.95,
         "top_k": 40,
-        "max_output_tokens": 2048,
+        "max_output_tokens": 8192,  # Aumentato per codice più lungo
         "response_mime_type": "text/plain",
     }
     
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-2.5-pro-preview-06-05",
         generation_config=generation_config,
     )
     
