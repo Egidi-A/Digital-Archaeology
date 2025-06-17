@@ -19,7 +19,7 @@ cd proleap-cobol-parser
 mvn clean install
 ```
 
-### 2. Clona questo progetto
+### 2. Clona questo progetto //da implementare
 
 ```bash
 git clone <your-repo-url>
@@ -37,6 +37,7 @@ mvn clean compile
 ```
 cobol-to-java-converter/
 ├── pom.xml
+├── README.md
 ├── src/
 │   └── main/
 │       ├── java/
@@ -51,8 +52,10 @@ cobol-to-java-converter/
 │               ├── example.cbl                      # Hello World COBOL
 │               └── employee.cbl                     # Employee manager COBOL
 └── output/
-    ├── ast.xml                                      # ASG COBOL in XML
-    └── java-ast.xml                                 # ASG Java in XML
+    ├── EmployeeASGCobol.xml
+    ├── EmployeeASGJava.xml
+    ├── ExampleASGCobol.xml
+    └── ExampleASGJava.xml
 ```
 
 ## Utilizzo
