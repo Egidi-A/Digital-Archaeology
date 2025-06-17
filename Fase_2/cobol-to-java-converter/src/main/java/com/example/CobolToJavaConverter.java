@@ -9,7 +9,7 @@ import java.io.File;
 public class CobolToJavaConverter {
     public static void main(String[] args) {
         try {
-            File cobolFile = new File("src/main/resources/cobol/example.cbl");
+            File cobolFile = new File("src/main/resources/cobol/File_COBOL.cbl");
             
             Program program = new CobolParserRunnerImpl().analyzeFile(cobolFile, CobolPreprocessor.CobolSourceFormatEnum.FIXED);
             
@@ -22,7 +22,7 @@ public class CobolToJavaConverter {
             });
             
             // Esporta in XML
-            ASTToXMLExporter.exportToXML(program, "output/ast.xml");
+            ASTToXMLExporter.exportToXML(program, "output/ASG_COBOL.xml");
         } catch (Exception e) {
             e.printStackTrace();
         }

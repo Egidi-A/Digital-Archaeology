@@ -12,7 +12,7 @@ public class CobolToJavaXMLTransformer {
     public static void main(String[] args) {
         try {
             // Legge XML COBOL ASG
-            File inputFile = new File("output/ast.xml");
+            File inputFile = new File("output/ASG_COBOL.xml");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document cobolDoc = dBuilder.parse(inputFile);
@@ -40,10 +40,10 @@ public class CobolToJavaXMLTransformer {
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
             
             DOMSource source = new DOMSource(javaDoc);
-            StreamResult result = new StreamResult(new File("output/java-ast.xml"));
+            StreamResult result = new StreamResult(new File("output/ASG_Java.xml"));
             transformer.transform(source, result);
             
-            System.out.println("Java ASG XML salvato in: output/java-ast.xml");
+            System.out.println("Java ASG XML salvato in: output/ASG_Java.xml");
             
         } catch (Exception e) {
             e.printStackTrace();

@@ -16,7 +16,7 @@ public class ASTVisitorExample {
     public static void main(String[] args) {
         try {
             // Parse COBOL file
-            File inputFile = new File("src/main/resources/cobol/example.cbl");
+            File inputFile = new File("src/main/resources/cobol/File_COBOL.cbl");
             Program program = new CobolParserRunnerImpl().analyzeFile(inputFile, CobolPreprocessor.CobolSourceFormatEnum.FIXED);
             
             // Create visitor for AST traversal
