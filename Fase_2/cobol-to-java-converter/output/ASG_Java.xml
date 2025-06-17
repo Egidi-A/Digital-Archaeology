@@ -1,17 +1,127 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <java-compilation-unit package="com.generated">
-  <class name="hello_world" visibility="public">
-    <field name="ws_message" type="String" visibility="private"/>
-    <method name="getWs_message" returnType="String" visibility="public">
-      <body return="ws_message"/>
+  <class name="employee_manager" visibility="public">
+    <field name="ws_employee" type="String" visibility="private"/>
+    <method name="getWs_employee" returnType="String" visibility="public">
+      <body return="ws_employee"/>
     </method>
-    <method name="setWs_message" returnType="void" visibility="public">
+    <method name="setWs_employee" returnType="void" visibility="public">
       <parameter name="value" type="String"/>
-      <body assignment="ws_message = value"/>
+      <body assignment="ws_employee = value"/>
+    </method>
+    <field name="ws_emp_id" type="String" visibility="private"/>
+    <method name="getWs_emp_id" returnType="String" visibility="public">
+      <body return="ws_emp_id"/>
+    </method>
+    <method name="setWs_emp_id" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_emp_id = value"/>
+    </method>
+    <field name="ws_emp_name" type="String" visibility="private"/>
+    <method name="getWs_emp_name" returnType="String" visibility="public">
+      <body return="ws_emp_name"/>
+    </method>
+    <method name="setWs_emp_name" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_emp_name = value"/>
+    </method>
+    <field name="ws_emp_salary" type="String" visibility="private"/>
+    <method name="getWs_emp_salary" returnType="String" visibility="public">
+      <body return="ws_emp_salary"/>
+    </method>
+    <method name="setWs_emp_salary" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_emp_salary = value"/>
+    </method>
+    <field name="ws_emp_dept" type="String" visibility="private"/>
+    <method name="getWs_emp_dept" returnType="String" visibility="public">
+      <body return="ws_emp_dept"/>
+    </method>
+    <method name="setWs_emp_dept" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_emp_dept = value"/>
+    </method>
+    <field name="ws_counters" type="String" visibility="private"/>
+    <method name="getWs_counters" returnType="String" visibility="public">
+      <body return="ws_counters"/>
+    </method>
+    <method name="setWs_counters" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_counters = value"/>
+    </method>
+    <field name="ws_total_salary" type="String" visibility="private"/>
+    <method name="getWs_total_salary" returnType="String" visibility="public">
+      <body return="ws_total_salary"/>
+    </method>
+    <method name="setWs_total_salary" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_total_salary = value"/>
+    </method>
+    <field name="ws_emp_count" type="String" visibility="private"/>
+    <method name="getWs_emp_count" returnType="String" visibility="public">
+      <body return="ws_emp_count"/>
+    </method>
+    <method name="setWs_emp_count" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_emp_count = value"/>
+    </method>
+    <field name="ws_flags" type="String" visibility="private"/>
+    <method name="getWs_flags" returnType="String" visibility="public">
+      <body return="ws_flags"/>
+    </method>
+    <method name="setWs_flags" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_flags = value"/>
+    </method>
+    <field name="ws_eof" type="String" visibility="private"/>
+    <method name="getWs_eof" returnType="String" visibility="public">
+      <body return="ws_eof"/>
+    </method>
+    <method name="setWs_eof" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body assignment="ws_eof = value"/>
+    </method>
+    <method name="main_paragraph" returnType="void" visibility="private">
+      <body>
+        <statement type="unknown"/>
+        <statement type="unknown"/>
+        <statement type="unknown"/>
+        <statement expression="System.exit(0)" type="exit"/>
+      </body>
+    </method>
+    <method name="init_paragraph" returnType="void" visibility="private">
+      <body>
+        <statement expression="System.out.println()" type="println"/>
+        <statement type="assignment"/>
+        <statement type="assignment"/>
+      </body>
+    </method>
+    <method name="process_employees" returnType="void" visibility="private">
+      <body>
+        <statement type="assignment"/>
+        <statement type="assignment"/>
+        <statement type="assignment"/>
+        <statement type="assignment"/>
+        <statement type="unknown"/>
+        <statement type="unknown"/>
+        <statement expression="System.out.println()" type="println"/>
+        <statement expression="System.out.println()" type="println"/>
+      </body>
+    </method>
+    <method name="display_results" returnType="void" visibility="private">
+      <body>
+        <statement expression="System.out.println()" type="println"/>
+        <statement expression="System.out.println()" type="println"/>
+      </body>
     </method>
     <method name="main" returnType="void" static="true" visibility="public">
       <parameter name="args" type="String[]"/>
-      <body/>
+      <body>
+        <method-call name="main_paragraph"/>
+        <method-call name="init_paragraph"/>
+        <method-call name="process_employees"/>
+        <method-call name="display_results"/>
+      </body>
     </method>
   </class>
 </java-compilation-unit>
