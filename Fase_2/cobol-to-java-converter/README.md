@@ -120,3 +120,4 @@ mvn exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
 - [ ] Supporto COPY statements
 - [ ] Conversione tipi COBOL → Java?
 - [ ] Miglioramento visitor pattern per estrazione dati specifici
+- [ ]
