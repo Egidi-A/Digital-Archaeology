@@ -1,16 +1,21 @@
-# COBOL to Java Converter
+# Note per la Conversione COBOL -> Java
 
-Progetto per il parsing e la conversione di codice COBOL in Java utilizzando ProLeap COBOL Parser.
+### What do i need to remember
+- Prerequisiti: Java, Maven e git installati.
+- Serve il ProLeap COBOL Parser, che è un progetto Maven.
+- Il file `.cbl` da convertire va messo in `src/main/resources/cobol/`.
+- Tutti i file generati finiranno nella cartella `output/`.
 
-## Prerequisiti
+### Funzionalità
 
-- Java 11+
-- Maven 3.6+
-- Git
+- **Parsing COBOL**: Analizza file COBOL e genera AST/ASG (Abstract Syntax Tree / Abstract Syntax Graph)
+- **Export `.xml`**: Esporta la struttura AST in formato `.xml`
+- **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
+- **Trasformazione `.xml`**: Converte ASG COBOL in ASG Java
+- **Supporto formati**: FIXED, VARIABLE, TANDEM
 
-## Installazione
 
-### 1. Clona e installa ProLeap COBOL Parser
+### Clonazione e install ProLeap COBOL Parser
 
 ```bash
 cd ~/temp
@@ -19,125 +24,99 @@ cd proleap-cobol-parser
 mvn clean install
 ```
 
-### 2. Clona questo progetto //da implementare
+## Passo 1: Generare l'`.xml` dall'AST del COBOL
+Questo è il primo step: legge il file `.cbl` e lo trasforma in un file `.xml` che rappresenta il suo AST/ASG (Abstract Syntax Tree/Graph).
 
+
+Cosa fa:
+1. Esegue la classe `CobolToJavaConverter.java`;
+2. Questa, a sua volta, usa `ASTToXMLExporter.java` per scrivere il file.
+
+- Input: `src/main/resources/cobol/File_COBOL.cbl`.
+- Output: `output/ASG_COBOL.xml`.
+
+Il file `.xml` generato contiene la rappresentazione dell'ASG del codice COBOL, con dettagli su:
+- Struttura delle divisioni COBOL
+- Variabili e tipi di dato
+- Paragrafi e statement
+
+### Per eseguirlo
+Da terminale dentro a `cobol-to-java-converter`, lanciare comando Maven:
 ```bash
-git clone <your-repo-url>
-cd cobol-to-java-converter
-```
-
-### 3. Compila il progetto
-
-```bash
-mvn clean compile
-```
-
-## Struttura del Progetto
-
-```
-cobol-to-java-converter/
-├── pom.xml
-├── README.md
-├── src/
-│   └── main/
-│       ├── java/
-│       │   └── com/
-│       │       └── example/
-│       │           ├── CobolToJavaConverter.java    # Main class
-│       │           ├── ASTToXMLExporter.java       # Esporta AST in XML
-│       │           ├── ASTVisitorExample.java      # Visitor pattern
-│       │           └── CobolToJavaXMLTransformer.java # Trasforma XML COBOL → Java
-│       └── resources/
-│           └── cobol/
-│               ├── example.cbl                      # Hello World COBOL
-│               └── employee.cbl                     # Employee manager COBOL
-└── output/
-    ├── EmployeeASGCobol.xml
-    ├── EmployeeASGJava.xml
-    ├── ExampleASGCobol.xml
-    └── ExampleASGJava.xml
-```
-
-## Utilizzo
-
-### Eseguire il converter principale
-
-```bash
+# Compila il progetto ed esegue il main di CobolToJavaConverter:
+mvn compile exec:java -Dexec.mainClass="com.example.CobolToJavaConverter"
+# Oppure prova:
 mvn exec:java -Dexec.mainClass="com.example.CobolToJavaConverter"
 ```
-
-### Eseguire il visitor example
-
-```bash
-mvn exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
-```
-
-### Generare il file XML
-
-Il file XML viene generato automaticamente quando esegui `CobolToJavaConverter`. Per personalizzare:
-
+Per personalizzare input e output:
 ```java
 // Cambia il file COBOL di input
 File cobolFile = new File("src/main/resources/cobol/employee.cbl");
 
-// Cambia il percorso di output XML
+// Cambia il percorso di output `.xml`
 ASTToXMLExporter.exportToXML(program, "output/employee-ast.xml");
 ```
 
-### Trasformare XML COBOL in XML Java
+## Passo 2: Trasformare l'`.xml` COBOL in `.xml` Java
+Ora che ho l'AST/ASG del COBOL in formato `.xml`, lo trasformo in un altro `.xml` che rappresenta la struttura di una classe Java (un Abstract Syntax Graph, o ASG).
 
-```bash
-mvn exec:java -Dexec.mainClass="com.example.CobolToJavaXMLTransformer"
-```
+Cosa fa: 
+1. Esegue la classe CobolToJavaXMLTransformer.
 
-Questo comando:
-1. Legge `output/ast.xml` (ASG COBOL)
-2. Trasforma la struttura in equivalente Java
-3. Genera `output/java-ast.xml` (ASG Java)
+- Input: `output/ASG_COBOL.xml`.
+- Output: `output/ASG_Java.xml`.
 
-Mappatura XML:
+Mappatura `.xml`:
 - program-unit → class
 - data-entry → field + getter/setter  
 - paragraph → method
 - statement → Java statement equivalente
 
-## Funzionalità
+### Per eseguirlo
+Da terminale dentro a `cobol-to-java-converter`, lanciare comando Maven:
+```bash
+# Compila il progetto ed esegue il main di CobolToJavaXMLTransformer:
+mvn compile exec:java -Dexec.mainClass="com.example.CobolToJavaXMLTransformer"
+# Oppure prova:
+mvn exec:java -Dexec.mainClass="com.example.CobolToJavaXMLTransformer"
+```
+A questo punto, ho ASG_Java.xml, che contiene la struttura della classe, dei campi, dei getter/setter e dei metodi che deriverebbero dal COBOL.
 
-- **Parsing COBOL**: Analizza file COBOL e genera AST/ASG (Abstract Syntax Tree / Abstract Syntax Graph)
-- **Export XML**: Esporta la struttura AST in formato XML
-- **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
-- **Trasformazione XML**: Converte ASG COBOL in ASG Java
-- **Supporto formati**: FIXED, VARIABLE, TANDEM
+## Passo 3: Generare il Codice `.java`
+Lo scriptino python `gemini_java_generator.py` legge il file `output/ASG_Java.xml` e genera il codice sorgente in un file `.java` vero e proprio.
 
-## Esempi COBOL
-
-### example.cbl
-```cobol
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. HELLO-WORLD.
-       DATA DIVISION.
-       WORKING-STORAGE SECTION.
-       01 WS-MESSAGE PIC X(20) VALUE "Hello COBOL World!".
-       PROCEDURE DIVISION.
-           DISPLAY WS-MESSAGE.
-           STOP RUN.
+Per farlo girare devo essere dentro allo spazio virtuale `venv` in cui ho installato `pip install google-generativeai`.
+Per entrare nello spazio virtuale, da terminale lanciato in `cobol-to-java-converter`, eseguire:
+```bash
+source venv/bin/activate
 ```
 
-### employee.cbl
-Esempio più complesso con strutture dati gerarchiche e paragrafi multipli.
+Cosa fa:
+1. Esegue il file `gemini_java_generator.py` che usa le API Gemini per generare il codice Java.
 
-## Output XML COBOL
-Il file XML generato contiene la rappresentazione dell'AST del codice COBOL, con dettagli su:
-- Struttura delle divisioni COBOL
-- Variabili e tipi di dato
-- Paragrafi e statement
-Il converter genera un file XML in `output/ast.xml`.
+- Input: `output/ASG_Java.xml`.
+- Output: `output/GeneratedClass.java`.
 
+### Per eseguirlo
+Da terminale dentro a `cobol-to-java-converter`, lanciare il comando:
+```bash
+python gemini_java_generator.py
+```
+
+# Note Extra
+## AST Visitor
+`ASTVisitorExample.java`: Questa è solo una classe di esempio. Non fa parte del flusso di conversione, ma serve per vedere come posso "visitare" l'AST del COBOL se volessi estrarre delle informazioni specifiche senza passare per l'`.xml`.
+### seguire il visitor example
+```bash
+# Compila il progetto ed esegue il main di ASTVisitorExample:
+mvn compile exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
+# Oppure prova:
+mvn exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
+```
 
 ## Estensioni Future
 
 - [ ] Generazione codice Java (sorgente) tramite chiamate API Gemini
 - [ ] Supporto COPY statements
 - [ ] Conversione tipi COBOL → Java?
-
-## License
+- [ ] Miglioramento visitor pattern per estrazione dati specifici
