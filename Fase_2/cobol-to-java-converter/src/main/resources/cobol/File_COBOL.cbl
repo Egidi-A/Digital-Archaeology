@@ -177,12 +177,10 @@
            
            IF SQLCODE = 100
                DISPLAY "Cliente non trovato!"
-               EXIT PARAGRAPH
            END-IF
            
            IF SQLCODE NOT = 0
                DISPLAY "Errore database: " SQLCODE
-               EXIT PARAGRAPH
            END-IF
            
            DISPLAY "Cliente: " WS-CLI-NOME " " WS-CLI-COGNOME
@@ -248,7 +246,6 @@
            
            PERFORM VERIFICA-CONTO
            IF WS-ESITO = "KO"
-               EXIT PARAGRAPH
            END-IF
            
            DISPLAY "Importo deposito: " WITH NO ADVANCING
@@ -256,7 +253,6 @@
            
            IF WS-IMPORTO <= 0
                DISPLAY "Importo non valido!"
-               EXIT PARAGRAPH
            END-IF
            
            DISPLAY "Causale: " WITH NO ADVANCING
@@ -287,7 +283,6 @@
            
            PERFORM VERIFICA-CONTO
            IF WS-ESITO = "KO"
-               EXIT PARAGRAPH
            END-IF
            
            DISPLAY "Importo prelievo: " WITH NO ADVANCING
@@ -295,7 +290,6 @@
            
            IF WS-IMPORTO <= 0
                DISPLAY "Importo non valido!"
-               EXIT PARAGRAPH
            END-IF
            
       * Verifica disponibilità
@@ -311,7 +305,6 @@
                DISPLAY "Fondi insufficienti!"
                DISPLAY "Saldo attuale: " WS-CON-SALDO
                DISPLAY "Fido disponibile: " WS-CON-FIDO
-               EXIT PARAGRAPH
            END-IF
            
            DISPLAY "Causale: " WITH NO ADVANCING
@@ -377,7 +370,6 @@
            
            PERFORM VERIFICA-CONTO
            IF WS-ESITO = "KO"
-               EXIT PARAGRAPH
            END-IF
            
            OPEN OUTPUT REPORT-FILE
@@ -494,7 +486,6 @@
            
            PERFORM VERIFICA-CONTO
            IF WS-ESITO = "KO"
-               EXIT PARAGRAPH
            END-IF
            
       * Verifica saldo zero
@@ -502,7 +493,6 @@
                DISPLAY "Impossibile chiudere: saldo non zero!"
                MOVE WS-CON-SALDO TO WS-SALDO-EDIT
                DISPLAY "Saldo attuale: EUR " WS-SALDO-EDIT
-               EXIT PARAGRAPH
            END-IF
            
            DISPLAY "Confermare chiusura conto (S/N): " 
@@ -564,3 +554,4 @@
                (:WS-NUMERO-CONTO, :WS-TIPO-MOVIMENTO, :WS-IMPORTO,
                 :WS-CAUSALE, :WS-SALDO, 'SISTEMA')
            END-EXEC.
+          
