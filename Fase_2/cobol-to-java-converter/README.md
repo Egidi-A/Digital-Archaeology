@@ -9,7 +9,7 @@
 ### Funzionalità
 
 - **Parsing COBOL**: Analizza file COBOL e genera AST/ASG (Abstract Syntax Tree / Abstract Syntax Graph)
-- **Export `.xml`**: Esporta la struttura AST in formato `.xml`
+- **Export `.xml`**: Esporta la struttura AST/ASG in formato `.xml`
 - **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
 - **Trasformazione `.xml`**: Converte ASG COBOL in ASG Java
 - **Supporto formati**: FIXED, VARIABLE, TANDEM
