@@ -85,9 +85,9 @@ Sei un compilatore avanzato e un traduttore di codice sorgente da COBOL a Java. 
 
 2. **Configurazione Database:**
    * Crea costanti per la configurazione del database PostgreSQL:
-     - `DB_URL = "jdbc:postgresql://localhost:5432/banca"`
-     - `DB_USER = "postgres"`
-     - `DB_PASSWORD = "password"`
+     - `DB_URL = "jdbc:postgresql://localhost:5432/banca"` - esattamente così ma al posto di banca metti il nome del file SQL
+     - `DB_USER = "postgres"` - esattmente così
+     - `DB_PASSWORD = "password"` - esattamente così
    * Dichiara un campo `private Connection connection;`
    * Implementa metodi `connectDatabase()` e `disconnectDatabase()` usando JDBC
 
