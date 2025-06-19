@@ -23,7 +23,7 @@ def generate_java_code(xml_content):
         "temperature": 0.2,  # Bassa per codice più deterministico
         "top_p": 0.95,
         "top_k": 40,
-        "max_output_tokens": 10000,
+        "max_output_tokens": 20000,
         "response_mime_type": "text/plain",
     }
     
@@ -44,12 +44,19 @@ genera il codice sorgente Java corrispondente. L'XML contiene:
 XML ASG:
 {xml_content}
 
-IMPORTANTE: Genera SOLO codice Java valido e compilabile. 
-- Includi JavaDoc completo per classe, campi e metodi
-- Aggiungi commenti inline dove appropriato
-- Usa convenzioni di naming Java (PascalCase per classi, camelCase per metodi/variabili)
-- Qualsiasi spiegazione o nota NON di codice deve essere inserita come commento Java (// o /* */)
-- NON includere testo fuori dal codice Java - tutto deve essere codice valido o commenti
+IMPORTANTE: Genera SOLO codice Java valido e compilabile.
+- Includi JavaDoc completo per classe, campi e metodi.
+- Aggiungi commenti inline dove appropriato per spiegare la logica.
+- Usa convenzioni di naming Java (PascalCase per classi, camelCase per metodi/variabili).
+
+- **Gestione Specifica degli SQL Statement**: L'ASG contiene tag come `<statement cobolType="execSqlStatement" type="unknown"/>`. Questi rappresentano operazioni di database. Quando ne incontri uno, devi simulare l'operazione in Java. La simulazione deve:
+    1.  Includere un commento che indichi l'intento originale (es. `// ASG: execSqlStatement (SELECT su cliente)`).
+    2.  Simulare l'esito dell'operazione impostando la variabile `sqlcode` (es. `sqlcode = 0;` per successo, `sqlcode = 100;` per record non trovato).
+    3.  Se la query era una `SELECT` che doveva popolare delle variabili (es. `:WS-CLI-NOME`), assegna a queste variabili dei valori fittizi e plausibili (es. `wsCliNome = "Mario"; wsCliCognome = "Rossi";`).
+    4.  Questa simulazione è cruciale perché l'ASG Java non contiene la query SQL esplicita.
+
+- Qualsiasi spiegazione o nota NON di codice deve essere inserita come commento Java (// o /* */).
+- NON includere testo fuori dal codice Java - tutto deve essere codice valido o commenti.
 
 Il file deve essere immediatamente compilabile con javac senza modifiche.
 """

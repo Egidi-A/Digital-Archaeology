@@ -9,7 +9,7 @@
 ### Funzionalità
 
 - **Parsing COBOL**: Analizza file COBOL e genera AST/ASG (Abstract Syntax Tree / Abstract Syntax Graph)
-- **Export `.xml`**: Esporta la struttura AST in formato `.xml`
+- **Export `.xml`**: Esporta la struttura AST/ASG in formato `.xml`
 - **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
 - **Trasformazione `.xml`**: Converte ASG COBOL in ASG Java
 - **Supporto formati**: FIXED, VARIABLE, TANDEM
@@ -120,3 +120,56 @@ mvn exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
 - [ ] Supporto COPY statements
 - [ ] Conversione tipi COBOL → Java?
 - [ ] Miglioramento visitor pattern per estrazione dati specifici
+- [ ]
+
+## Traduttore COBOL to Java con supporto JDBC
+
+### Prerequisiti
+- Python 3.x con libreria google-generativeai
+- PostgreSQL installato e configurato
+- Driver JDBC PostgreSQL
+
+## Uso del traduttore
+
+### 1. Esecuzione con parametri personalizzati:
+```bash
+python traduttoreDirettoWithSQL_generator.py --cobol File_COBOL.cbl --sql bank_schema.sql --output GestioneConti.java
+```
+### 2. Setup database PostgreSQL:
+
+```bash
+# Crea database
+sudo -u postgres psql -c "CREATE DATABASE banca;"
+
+### 2. Carica schema
+sudo -u postgres psql -d banca -f bank_schema.sql
+
+### 3. Imposta password utente
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'password';"
+```
+### 3. Configurazione pg_hba.conf:
+Modifica `/etc/postgresql/*/main/pg_hba.conf`:
+
+```plaintext
+local   all   postgres   md5
+local   all   all        md5
+```
+
+Riavvia: `sudo systemctl restart postgresql`
+
+### 4. Compilazione ed esecuzione Java:
+
+```bash
+# Download driver JDBC
+wget https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+
+# Compila
+javac GestioneConti.java
+
+# Esegui
+java -cp .:postgresql-42.7.3.jar GestioneConti
+```
+
+**Note**
+- Verifica le credenziali nel file Java generato (DB_URL, DB_USER, DB_PASSWORD)
+- Su Windows usa ; invece di : nel classpath
