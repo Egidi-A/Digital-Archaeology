@@ -1,0 +1,769 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<java-compilation-unit package="com.generated">
+  <class name="GestioneConti" visibility="public">
+    <field name="connection" type="java.sql.Connection" visibility="private"/>
+    <field name="sqlcode" type="int" visibility="private"/>
+    <field name="wsCliCodice" type="String" visibility="private"/>
+    <method name="getWsCliCodice" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliCodice" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliCodice" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliCodice = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliNome" type="String" visibility="private"/>
+    <method name="getWsCliNome" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliNome" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliNome" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliNome = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliCognome" type="String" visibility="private"/>
+    <method name="getWsCliCognome" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliCognome" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliCognome" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliCognome = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliCf" type="String" visibility="private"/>
+    <method name="getWsCliCf" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliCf" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliCf" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliCf = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliDataNascita" type="String" visibility="private"/>
+    <method name="getWsCliDataNascita" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliDataNascita" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliDataNascita" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliDataNascita = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliIndirizzo" type="String" visibility="private"/>
+    <method name="getWsCliIndirizzo" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliIndirizzo" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliIndirizzo" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliIndirizzo = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliCitta" type="String" visibility="private"/>
+    <method name="getWsCliCitta" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliCitta" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliCitta" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliCitta = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliCap" type="String" visibility="private"/>
+    <method name="getWsCliCap" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliCap" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliCap" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliCap = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliTelefono" type="String" visibility="private"/>
+    <method name="getWsCliTelefono" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliTelefono" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliTelefono" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliTelefono = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsCliEmail" type="String" visibility="private"/>
+    <method name="getWsCliEmail" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsCliEmail" type="return"/>
+      </body>
+    </method>
+    <method name="setWsCliEmail" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsCliEmail = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConNumero" type="String" visibility="private"/>
+    <method name="getWsConNumero" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsConNumero" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConNumero" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsConNumero = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConCliente" type="String" visibility="private"/>
+    <method name="getWsConCliente" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsConCliente" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConCliente" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsConCliente = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConTipo" type="String" visibility="private"/>
+    <method name="getWsConTipo" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsConTipo" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConTipo" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsConTipo = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConSaldo" type="BigDecimal" visibility="private"/>
+    <method name="getWsConSaldo" returnType="BigDecimal" visibility="public">
+      <body>
+        <statement expression="return wsConSaldo" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConSaldo" returnType="void" visibility="public">
+      <parameter name="value" type="BigDecimal"/>
+      <body>
+        <statement expression="this.wsConSaldo = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConDataApertura" type="String" visibility="private"/>
+    <method name="getWsConDataApertura" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsConDataApertura" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConDataApertura" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsConDataApertura = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConStato" type="String" visibility="private"/>
+    <method name="getWsConStato" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsConStato" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConStato" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsConStato = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsConFido" type="BigDecimal" visibility="private"/>
+    <method name="getWsConFido" returnType="BigDecimal" visibility="public">
+      <body>
+        <statement expression="return wsConFido" type="return"/>
+      </body>
+    </method>
+    <method name="setWsConFido" returnType="void" visibility="public">
+      <parameter name="value" type="BigDecimal"/>
+      <body>
+        <statement expression="this.wsConFido = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsMovData" type="String" visibility="private"/>
+    <method name="getWsMovData" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsMovData" type="return"/>
+      </body>
+    </method>
+    <method name="setWsMovData" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsMovData = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsMovTipo" type="String" visibility="private"/>
+    <method name="getWsMovTipo" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsMovTipo" type="return"/>
+      </body>
+    </method>
+    <method name="setWsMovTipo" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsMovTipo = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsMovImporto" type="BigDecimal" visibility="private"/>
+    <method name="getWsMovImporto" returnType="BigDecimal" visibility="public">
+      <body>
+        <statement expression="return wsMovImporto" type="return"/>
+      </body>
+    </method>
+    <method name="setWsMovImporto" returnType="void" visibility="public">
+      <parameter name="value" type="BigDecimal"/>
+      <body>
+        <statement expression="this.wsMovImporto = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsMovCausale" type="String" visibility="private"/>
+    <method name="getWsMovCausale" returnType="String" visibility="public">
+      <body>
+        <statement expression="return wsMovCausale" type="return"/>
+      </body>
+    </method>
+    <method name="setWsMovCausale" returnType="void" visibility="public">
+      <parameter name="value" type="String"/>
+      <body>
+        <statement expression="this.wsMovCausale = value" type="assignment"/>
+      </body>
+    </method>
+    <field name="wsMovSaldoDopo" type="BigDecimal" visibility="private"/>
+    <method name="getWsMovSaldoDopo" returnType="BigDecimal" visibility="public">
+      <body>
+        <statement expression="return wsMovSaldoDopo" type="return"/>
+      </body>
+    </method>
+    <method name="setWsMovSaldoDopo" returnType="void" visibility="public">
+      <parameter name="value" type="BigDecimal"/>
+      <body>
+        <statement expression="this.wsMovSaldoDopo = value" type="assignment"/>
+      </body>
+    </method>
+    <method name="mainLogic" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="performStatement" expression="connettiDatabase()" name="connettiDatabase" type="method-call"/>
+        <statement cobolType="performStatement" expression="visualizzaMenu()" name="visualizzaMenu" type="method-call"/>
+        <statement cobolType="performStatement" expression="visualizzaMenu()" name="visualizzaMenu" type="method-call"/>
+        <statement cobolType="performStatement" expression="elaboraScelta()" name="elaboraScelta" type="method-call"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Continuare? (S/N): &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsContinua = scanner.nextLine()" type="input"/>
+        <statement cobolType="performStatement" expression="disconnettiDatabase()" name="disconnettiDatabase" type="method-call"/>
+        <statement cobolType="stopStatement" expression="System.exit(0)" type="exit"/>
+      </body>
+    </method>
+    <method name="connettiDatabase" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <if condition="SQLCODE != 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore connessione database: &quot; + sqlcode)" type="println"/>
+            <statement cobolType="stopStatement" expression="System.exit(0)" type="exit"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Connessione al database stabilita&quot;)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore connessione database: &quot; + sqlcode)" type="println"/>
+        <statement cobolType="stopStatement" expression="System.exit(0)" type="exit"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Connessione al database stabilita&quot;)" type="println"/>
+      </body>
+    </method>
+    <method name="disconnettiDatabase" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Disconnesso dal database&quot;)" type="println"/>
+      </body>
+    </method>
+    <method name="visualizzaMenu" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;===== SISTEMA GESTIONE CONTI CORRENTI =====&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;1. Apertura nuovo conto&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;2. Deposito&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;3. Prelievo&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;4. Visualizza saldo&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;5. Estratto conto&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;6. Chiusura conto&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;0. Esci&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;===========================================&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Scelta: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsScelta = scanner.nextLine()" type="input"/>
+      </body>
+    </method>
+    <method name="elaboraScelta" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <switch expression="wsScelta">
+          <case value="1">
+            <statement cobolType="performStatement" expression="aperturaConto()" name="aperturaConto" type="method-call"/>
+            <statement type="break"/>
+          </case>
+          <case value="2">
+            <statement cobolType="performStatement" expression="deposito()" name="deposito" type="method-call"/>
+            <statement type="break"/>
+          </case>
+          <case value="3">
+            <statement cobolType="performStatement" expression="prelievo()" name="prelievo" type="method-call"/>
+            <statement type="break"/>
+          </case>
+          <case value="4">
+            <statement cobolType="performStatement" expression="visualizzaSaldo()" name="visualizzaSaldo" type="method-call"/>
+            <statement type="break"/>
+          </case>
+          <case value="5">
+            <statement cobolType="performStatement" expression="estrattoConto()" name="estrattoConto" type="method-call"/>
+            <statement type="break"/>
+          </case>
+          <case value="6">
+            <statement cobolType="performStatement" expression="chiusuraConto()" name="chiusuraConto" type="method-call"/>
+            <statement type="break"/>
+          </case>
+          <case value="0">
+            <statement cobolType="moveStatement" expression="wsContinua = &quot;N&quot;" type="assignment"/>
+            <statement type="break"/>
+          </case>
+          <default>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Scelta non valida!&quot;)" type="println"/>
+          </default>
+        </switch>
+        <statement cobolType="performStatement" expression="aperturaConto()" name="aperturaConto" type="method-call"/>
+        <statement cobolType="performStatement" expression="deposito()" name="deposito" type="method-call"/>
+        <statement cobolType="performStatement" expression="prelievo()" name="prelievo" type="method-call"/>
+        <statement cobolType="performStatement" expression="visualizzaSaldo()" name="visualizzaSaldo" type="method-call"/>
+        <statement cobolType="performStatement" expression="estrattoConto()" name="estrattoConto" type="method-call"/>
+        <statement cobolType="performStatement" expression="chiusuraConto()" name="chiusuraConto" type="method-call"/>
+        <statement cobolType="moveStatement" expression="wsContinua = &quot;N&quot;" type="assignment"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Scelta non valida!&quot;)" type="println"/>
+      </body>
+    </method>
+    <method name="aperturaConto" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;=== APERTURA NUOVO CONTO ===&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Codice cliente: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsConCliente = scanner.nextLine()" type="input"/>
+        <if condition="SQLCODE == 100">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Cliente non trovato!&quot;)" type="println"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Cliente non trovato!&quot;)" type="println"/>
+        <if condition="SQLCODE != 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Cliente: &quot; + wsCliNome + &quot; &quot; + wsCliCognome)" type="println"/>
+        <statement cobolType="performStatement" expression="generaNumeroConto()" name="generaNumeroConto" type="method-call"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Tipo conto (C=Corrente, D=Deposito): &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsConTipo = scanner.nextLine()" type="input"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo iniziale: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsConSaldo = scanner.nextBigDecimal()" type="input"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Fido accordato: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsConFido = scanner.nextBigDecimal()" type="input"/>
+        <statement cobolType="moveStatement" expression="wsConDataApertura = 1" type="assignment"/>
+        <statement cobolType="moveStatement" expression="wsConStato = &quot;A&quot;" type="assignment"/>
+        <if condition="SQLCODE == 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto &quot; + wsConNumero + &quot; creato con successo!&quot;)" type="println"/>
+            <if condition="WS-CON-SALDO &gt; 0">
+              <then>
+                <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;D&quot;" type="assignment"/>
+                <statement cobolType="moveStatement" expression="wsCausale = &quot;Deposito iniziale&quot;" type="assignment"/>
+                <statement cobolType="moveStatement" expression="wsImporto = wsConSaldo" type="assignment"/>
+                <statement cobolType="moveStatement" expression="wsNumeroConto = wsConNumero" type="assignment"/>
+                <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+              </then>
+            </if>
+            <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;D&quot;" type="assignment"/>
+            <statement cobolType="moveStatement" expression="wsCausale = &quot;Deposito iniziale&quot;" type="assignment"/>
+            <statement cobolType="moveStatement" expression="wsImporto = wsConSaldo" type="assignment"/>
+            <statement cobolType="moveStatement" expression="wsNumeroConto = wsConNumero" type="assignment"/>
+            <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore creazione conto: &quot; + sqlcode)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto &quot; + wsConNumero + &quot; creato con successo!&quot;)" type="println"/>
+        <if condition="WS-CON-SALDO &gt; 0">
+          <then>
+            <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;D&quot;" type="assignment"/>
+            <statement cobolType="moveStatement" expression="wsCausale = &quot;Deposito iniziale&quot;" type="assignment"/>
+            <statement cobolType="moveStatement" expression="wsImporto = wsConSaldo" type="assignment"/>
+            <statement cobolType="moveStatement" expression="wsNumeroConto = wsConNumero" type="assignment"/>
+            <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+          </then>
+        </if>
+        <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;D&quot;" type="assignment"/>
+        <statement cobolType="moveStatement" expression="wsCausale = &quot;Deposito iniziale&quot;" type="assignment"/>
+        <statement cobolType="moveStatement" expression="wsImporto = wsConSaldo" type="assignment"/>
+        <statement cobolType="moveStatement" expression="wsNumeroConto = wsConNumero" type="assignment"/>
+        <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore creazione conto: &quot; + sqlcode)" type="println"/>
+      </body>
+    </method>
+    <method name="generaNumeroConto" returnType="void" throws="SQLException" visibility="private">
+      <body/>
+    </method>
+    <method name="deposito" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;=== DEPOSITO ===&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Numero conto: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsNumeroConto = scanner.nextLine()" type="input"/>
+        <statement cobolType="performStatement" expression="verificaConto()" name="verificaConto" type="method-call"/>
+        <if condition="WS-ESITO == &quot;KO&quot;">
+          <then/>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo deposito: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsImporto = scanner.nextLine()" type="input"/>
+        <if condition="WS-IMPORTO == 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo non valido!&quot;)" type="println"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo non valido!&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Causale: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsCausale = scanner.nextLine()" type="input"/>
+        <if condition="SQLCODE == 0">
+          <then>
+            <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;D&quot;" type="assignment"/>
+            <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Deposito effettuato con successo!&quot;)" type="println"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore durante il deposito: &quot; + sqlcode)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;D&quot;" type="assignment"/>
+        <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Deposito effettuato con successo!&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore durante il deposito: &quot; + sqlcode)" type="println"/>
+      </body>
+    </method>
+    <method name="prelievo" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;=== PRELIEVO ===&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Numero conto: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsNumeroConto = scanner.nextLine()" type="input"/>
+        <statement cobolType="performStatement" expression="verificaConto()" name="verificaConto" type="method-call"/>
+        <if condition="WS-ESITO == &quot;KO&quot;">
+          <then/>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo prelievo: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsImporto = scanner.nextLine()" type="input"/>
+        <if condition="WS-IMPORTO == 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo non valido!&quot;)" type="println"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Importo non valido!&quot;)" type="println"/>
+        <if condition="WS-CON-SALDO-WS-IMPORTO &lt; (0-WS-CON-FIDO)">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Fondi insufficienti!&quot;)" type="println"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Saldo attuale: &quot; + wsConSaldo)" type="println"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Fido disponibile: &quot; + wsConFido)" type="println"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Fondi insufficienti!&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Saldo attuale: &quot; + wsConSaldo)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Fido disponibile: &quot; + wsConFido)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Causale: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsCausale = scanner.nextLine()" type="input"/>
+        <if condition="SQLCODE == 0">
+          <then>
+            <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;P&quot;" type="assignment"/>
+            <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Prelievo effettuato con successo!&quot;)" type="println"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore durante il prelievo: &quot; + sqlcode)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="moveStatement" expression="wsTipoMovimento = &quot;P&quot;" type="assignment"/>
+        <statement cobolType="performStatement" expression="registraMovimento()" name="registraMovimento" type="method-call"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Prelievo effettuato con successo!&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore durante il prelievo: &quot; + sqlcode)" type="println"/>
+      </body>
+    </method>
+    <method name="visualizzaSaldo" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;=== VISUALIZZA SALDO ===&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Numero conto: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsNumeroConto = scanner.nextLine()" type="input"/>
+        <if condition="SQLCODE == 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Intestatario: &quot; + wsCliNome + &quot; &quot; + wsCliCognome)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConSaldo" type="assignment"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Saldo attuale: EUR &quot; + wsSaldoEdit)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConFido" type="assignment"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Fido accordato: EUR &quot; + wsSaldoEdit)" type="println"/>
+            <statement cobolType="computeStatement" expression="wsSaldo = WS-CON-SALDO+WS-CON-FIDO" type="arithmetic"/>
+            <statement cobolType="moveStatement" expression="wsSaldoEdit = wsSaldo" type="assignment"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Disponibile: EUR &quot; + wsSaldoEdit)" type="println"/>
+          </then>
+          <else>
+            <if condition="SQLCODE == 100">
+              <then>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non trovato o non attivo!&quot;)" type="println"/>
+              </then>
+              <else>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+              </else>
+            </if>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non trovato o non attivo!&quot;)" type="println"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Intestatario: &quot; + wsCliNome + &quot; &quot; + wsCliCognome)" type="println"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConSaldo" type="assignment"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Saldo attuale: EUR &quot; + wsSaldoEdit)" type="println"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConFido" type="assignment"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Fido accordato: EUR &quot; + wsSaldoEdit)" type="println"/>
+        <statement cobolType="computeStatement" expression="wsSaldo = WS-CON-SALDO+WS-CON-FIDO" type="arithmetic"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsSaldo" type="assignment"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Disponibile: EUR &quot; + wsSaldoEdit)" type="println"/>
+        <if condition="SQLCODE == 100">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non trovato o non attivo!&quot;)" type="println"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non trovato o non attivo!&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+      </body>
+    </method>
+    <method name="estrattoConto" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;=== ESTRATTO CONTO ===&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Numero conto: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsNumeroConto = scanner.nextLine()" type="input"/>
+        <statement cobolType="performStatement" expression="verificaConto()" name="verificaConto" type="method-call"/>
+        <if condition="WS-ESITO == &quot;KO&quot;">
+          <then/>
+        </if>
+        <statement cobolType="openStatement" expression="report-file = new PrintWriter(new FileWriter(&quot;ESTRATTO-CONTO.TXT&quot;))" type="file-open"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(wsTitoloReport)" type="file-write"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(wsLineaSeparatore)" type="file-write"/>
+        <statement cobolType="stringStatement" expression="reportRecord = &quot;Conto: &quot; + wsNumeroConto + &quot;    Cliente: &quot; + wsCliNome + &quot; &quot; + wsCliCognome" type="string-concat"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(reportRecord)" type="file-write"/>
+        <statement cobolType="stringStatement" expression="reportRecord = &quot;Data: &quot; + 1 + &quot;    Ora: &quot; + 12" type="string-concat"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(reportRecord)" type="file-write"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(wsLineaSeparatore)" type="file-write"/>
+        <statement cobolType="stringStatement" expression="reportRecord = &quot;DATA/ORA            TIPO  &quot; + &quot;    IMPORTO     CAUSALE&quot; + &quot;                    SALDO DOPO&quot;" type="string-concat"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(reportRecord)" type="file-write"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(wsLineaSeparatore)" type="file-write"/>
+        <statement cobolType="performStatement" expression="scriviMovimentoReport()" name="scriviMovimentoReport" type="method-call"/>
+        <if condition="SQLCODE == 0">
+          <then>
+            <statement cobolType="performStatement" expression="scriviMovimentoReport()" name="scriviMovimentoReport" type="method-call"/>
+          </then>
+        </if>
+        <statement cobolType="performStatement" expression="scriviMovimentoReport()" name="scriviMovimentoReport" type="method-call"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(wsLineaSeparatore)" type="file-write"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConSaldo" type="assignment"/>
+        <statement cobolType="stringStatement" expression="reportRecord = &quot;SALDO FINALE: EUR &quot; + wsSaldoEdit" type="string-concat"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(reportRecord)" type="file-write"/>
+        <statement cobolType="closeStatement" expression="report-file.close()" type="file-close"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Estratto conto salvato in ESTRATTO-CONTO.TXT&quot;)" type="println"/>
+      </body>
+    </method>
+    <method name="scriviMovimentoReport" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="moveStatement" expression="reportRecord = &quot; &quot;" type="assignment"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;  &quot;" type="string-concat"/>
+        <switch expression="wsMovTipo">
+          <case value="&quot;D&quot;">
+            <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;DEP  &quot;" type="string-concat"/>
+            <statement type="break"/>
+          </case>
+          <case value="&quot;P&quot;">
+            <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;PRE  &quot;" type="string-concat"/>
+            <statement type="break"/>
+          </case>
+          <case value="&quot;B&quot;">
+            <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;BON  &quot;" type="string-concat"/>
+            <statement type="break"/>
+          </case>
+          <default>
+            <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;???  &quot;" type="string-concat"/>
+          </default>
+        </switch>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;DEP  &quot;" type="string-concat"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;PRE  &quot;" type="string-concat"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;BON  &quot;" type="string-concat"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + &quot;???  &quot;" type="string-concat"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsMovImporto" type="assignment"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + wsSaldoEdit + &quot; &quot;" type="string-concat"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + 1 + &quot; &quot;" type="string-concat"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsMovSaldoDopo" type="assignment"/>
+        <statement cobolType="stringStatement" expression="reportRecord = 1 + wsSaldoEdit" type="string-concat"/>
+        <statement cobolType="writeStatement" expression="reportFile.println(reportRecord)" type="file-write"/>
+      </body>
+    </method>
+    <method name="chiusuraConto" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot; &quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;=== CHIUSURA CONTO ===&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Numero conto da chiudere: &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsNumeroConto = scanner.nextLine()" type="input"/>
+        <statement cobolType="performStatement" expression="verificaConto()" name="verificaConto" type="method-call"/>
+        <if condition="WS-ESITO == &quot;KO&quot;">
+          <then/>
+        </if>
+        <if condition="WS-CON-SALDO != 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Impossibile chiudere: saldo non zero!&quot;)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConSaldo" type="assignment"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Saldo attuale: EUR &quot; + wsSaldoEdit)" type="println"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Impossibile chiudere: saldo non zero!&quot;)" type="println"/>
+        <statement cobolType="moveStatement" expression="wsSaldoEdit = wsConSaldo" type="assignment"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Saldo attuale: EUR &quot; + wsSaldoEdit)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Confermare chiusura conto (S/N): &quot;)" type="println"/>
+        <statement cobolType="acceptStatement" expression="wsContinua = scanner.nextLine()" type="input"/>
+        <if condition="WS-CONTINUA == 'S' || 's'">
+          <then>
+            <if condition="SQLCODE == 0">
+              <then>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto chiuso con successo!&quot;)" type="println"/>
+              </then>
+              <else>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore chiusura conto: &quot; + sqlcode)" type="println"/>
+              </else>
+            </if>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto chiuso con successo!&quot;)" type="println"/>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore chiusura conto: &quot; + sqlcode)" type="println"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Chiusura annullata&quot;)" type="println"/>
+          </else>
+        </if>
+        <if condition="SQLCODE == 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto chiuso con successo!&quot;)" type="println"/>
+          </then>
+          <else>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore chiusura conto: &quot; + sqlcode)" type="println"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto chiuso con successo!&quot;)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore chiusura conto: &quot; + sqlcode)" type="println"/>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Chiusura annullata&quot;)" type="println"/>
+      </body>
+    </method>
+    <method name="verificaConto" returnType="void" throws="SQLException" visibility="private">
+      <body>
+        <statement cobolType="moveStatement" expression="wsEsito = &quot;OK&quot;" type="assignment"/>
+        <if condition="SQLCODE == 100">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non trovato!&quot;)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+          </then>
+          <else>
+            <if condition="SQLCODE != 0">
+              <then>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+                <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+              </then>
+              <else>
+                <if condition="WS-CON-STATO != 'A'">
+                  <then>
+                    <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+                    <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+                  </then>
+                </if>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+                <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+              </else>
+            </if>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+            <if condition="WS-CON-STATO != 'A'">
+              <then>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+                <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+              </then>
+            </if>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non trovato!&quot;)" type="println"/>
+        <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+        <if condition="SQLCODE != 0">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+          </then>
+          <else>
+            <if condition="WS-CON-STATO != 'A'">
+              <then>
+                <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+                <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+              </then>
+            </if>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+          </else>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Errore database: &quot; + sqlcode)" type="println"/>
+        <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+        <if condition="WS-CON-STATO != 'A'">
+          <then>
+            <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+            <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+          </then>
+        </if>
+        <statement cobolType="displayStatement" expression="System.out.println(&quot;Conto non attivo!&quot;)" type="println"/>
+        <statement cobolType="moveStatement" expression="wsEsito = &quot;KO&quot;" type="assignment"/>
+      </body>
+    </method>
+    <method name="registraMovimento" returnType="void" throws="SQLException" visibility="private">
+      <body/>
+    </method>
+    <method name="main" returnType="void" static="true" visibility="public">
+      <parameter name="args" type="String[]"/>
+      <body>
+        <statement expression="GestioneConti app = new GestioneConti()" type="instantiation"/>
+        <statement expression="app.mainLogic()" type="method-call"/>
+      </body>
+    </method>
+  </class>
+</java-compilation-unit>

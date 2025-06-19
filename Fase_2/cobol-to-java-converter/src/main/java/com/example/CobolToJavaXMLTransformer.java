@@ -14,11 +14,17 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CobolToJavaXMLTransformer {
 
     // Map per tenere traccia dei campi dichiarati
     private static Map<String, String> declaredFields = new HashMap<>();
+    // Map per tenere traccia dei cursori SQL dichiarati
+    private static Map<String, String> declaredCursors = new HashMap<>();
+    // Set per tenere traccia delle variabili SQL usate
+    private static Set<String> sqlVariables = new HashSet<>();
     
     public static void main(String[] args) {
         try {
@@ -68,6 +74,9 @@ public class CobolToJavaXMLTransformer {
         javaClass.setAttribute("visibility", "public");
         javaRoot.appendChild(javaClass);
 
+        // Aggiungi campo per la connessione database
+        addDatabaseConnectionField(javaDoc, javaClass);
+
         // Processa DATA DIVISION
         NodeList dataDivisions = cobolRoot.getElementsByTagName("dataDivision");
         if (dataDivisions.getLength() > 0) {
@@ -81,7 +90,32 @@ public class CobolToJavaXMLTransformer {
         }
     }
 
+    private static void addDatabaseConnectionField(Document javaDoc, Element javaClass) {
+        Element connField = javaDoc.createElement("field");
+        connField.setAttribute("name", "connection");
+        connField.setAttribute("type", "java.sql.Connection");
+        connField.setAttribute("visibility", "private");
+        javaClass.appendChild(connField);
+        
+        Element sqlCodeField = javaDoc.createElement("field");
+        sqlCodeField.setAttribute("name", "sqlcode");
+        sqlCodeField.setAttribute("type", "int");
+        sqlCodeField.setAttribute("visibility", "private");
+        javaClass.appendChild(sqlCodeField);
+    }
+
     private static void processDataDivision(Element dataDiv, Document javaDoc, Element javaClass) {
+        // Processa le SQL DECLARE prima
+        NodeList sqlDeclares = dataDiv.getElementsByTagName("dataDescriptionEntryExecSql");
+        for (int i = 0; i < sqlDeclares.getLength(); i++) {
+            Element sqlDeclare = (Element) sqlDeclares.item(i);
+            String sqlContent = extractSqlContent(sqlDeclare);
+            if (sqlContent.contains("DECLARE") && sqlContent.contains("CURSOR")) {
+                processSqlCursorDeclaration(sqlContent, javaDoc, javaClass);
+            }
+        }
+        
+        // Processa i campi normali
         NodeList dataEntries = dataDiv.getElementsByTagName("dataDescriptionEntryFormat1");
         
         for (int i = 0; i < dataEntries.getLength(); i++) {
@@ -129,6 +163,35 @@ public class CobolToJavaXMLTransformer {
         }
     }
 
+    private static void processSqlCursorDeclaration(String sqlContent, Document javaDoc, Element javaClass) {
+        // Estrai il nome del cursore
+        Pattern cursorPattern = Pattern.compile("DECLARE\\s+(\\w+)\\s+CURSOR", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = cursorPattern.matcher(sqlContent);
+        
+        if (matcher.find()) {
+            String cursorName = matcher.group(1).toLowerCase();
+            String cursorFieldName = "cursor" + sanitizeNameForClass(cursorName);
+            
+            // Aggiungi campo per il PreparedStatement del cursore
+            Element cursorField = javaDoc.createElement("field");
+            cursorField.setAttribute("name", cursorFieldName);
+            cursorField.setAttribute("type", "java.sql.PreparedStatement");
+            cursorField.setAttribute("visibility", "private");
+            javaClass.appendChild(cursorField);
+            
+            // Aggiungi campo per il ResultSet
+            Element rsField = javaDoc.createElement("field");
+            rsField.setAttribute("name", "rs" + sanitizeNameForClass(cursorName));
+            rsField.setAttribute("type", "java.sql.ResultSet");
+            rsField.setAttribute("visibility", "private");
+            javaClass.appendChild(rsField);
+            
+            // Salva la query SQL per uso successivo
+            String sqlQuery = extractSqlQuery(sqlContent);
+            declaredCursors.put(cursorName.toUpperCase(), sqlQuery);
+        }
+    }
+
     private static void processProcedureDivision(Element procDiv, Document javaDoc, Element javaClass) {
         NodeList paragraphs = procDiv.getElementsByTagName("paragraph");
         List<String> paragraphNames = new ArrayList<>();
@@ -148,6 +211,7 @@ public class CobolToJavaXMLTransformer {
             method.setAttribute("name", methodName);
             method.setAttribute("visibility", "private");
             method.setAttribute("returnType", "void");
+            method.setAttribute("throws", "SQLException");
             javaClass.appendChild(method);
 
             Element body = javaDoc.createElement("body");
@@ -201,6 +265,42 @@ public class CobolToJavaXMLTransformer {
                 processAddStatement(stmtNode, javaStmt);
                 break;
                 
+            case "execSqlStatement":
+                processExecSqlStatement(stmtNode, javaStmt, javaDoc, methodBody);
+                return; // Return early as SQL might generate multiple statements
+                
+            case "acceptStatement":
+                processAcceptStatement(stmtNode, javaStmt);
+                break;
+                
+            case "computeStatement":
+                processComputeStatement(stmtNode, javaStmt);
+                break;
+                
+            case "ifStatement":
+                processIfStatement(stmtNode, javaStmt, javaDoc, methodBody);
+                return; // Return early as IF generates complex structure
+                
+            case "evaluateStatement":
+                processEvaluateStatement(stmtNode, javaStmt, javaDoc, methodBody);
+                return; // Return early as EVALUATE generates complex structure
+                
+            case "openStatement":
+                processOpenStatement(stmtNode, javaStmt);
+                break;
+                
+            case "closeStatement":
+                processCloseStatement(stmtNode, javaStmt);
+                break;
+                
+            case "writeStatement":
+                processWriteStatement(stmtNode, javaStmt);
+                break;
+                
+            case "stringStatement":
+                processStringStatement(stmtNode, javaStmt);
+                break;
+                
             default:
                 javaStmt.setAttribute("type", "unknown");
                 break;
@@ -209,6 +309,1005 @@ public class CobolToJavaXMLTransformer {
         methodBody.appendChild(javaStmt);
     }
 
+    private static void processExecSqlStatement(Element sqlStmt, Element javaStmt, Document javaDoc, Element methodBody) {
+        String sqlContent = extractSqlContent(sqlStmt);
+        
+        if (sqlContent.contains("CONNECT TO")) {
+            processConnectStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("DISCONNECT")) {
+            processDisconnectStatement(javaDoc, methodBody);
+        } else if (sqlContent.contains("SELECT") && !sqlContent.contains("INSERT")) {
+            processSelectStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("INSERT")) {
+            processInsertStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("UPDATE")) {
+            processUpdateStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("DELETE")) {
+            processDeleteStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("OPEN") && sqlContent.contains("CUR")) {
+            processOpenCursorStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("FETCH")) {
+            processFetchStatement(sqlContent, javaDoc, methodBody);
+        } else if (sqlContent.contains("CLOSE") && sqlContent.contains("CUR")) {
+            processCloseCursorStatement(sqlContent, javaDoc, methodBody);
+        }
+    }
+
+    private static void processConnectStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        // Try block
+        Element tryBlock = javaDoc.createElement("try-block");
+        methodBody.appendChild(tryBlock);
+        
+        // Extract connection parameters
+        Pattern pattern = Pattern.compile("'([^']*)'");
+        Matcher matcher = pattern.matcher(sqlContent);
+        List<String> params = new ArrayList<>();
+        while (matcher.find()) {
+            params.add(matcher.group(1));
+        }
+        
+        String url = params.size() > 0 ? params.get(0) : "jdbc:postgresql://localhost/database";
+        String user = params.size() > 1 ? params.get(1) : "user";
+        String password = params.size() > 2 ? params.get(2) : "password";
+        
+        // Connection statement
+        Element connStmt = javaDoc.createElement("statement");
+        connStmt.setAttribute("type", "assignment");
+        connStmt.setAttribute("expression", 
+            String.format("connection = DriverManager.getConnection(\"%s\", \"%s\", \"%s\")", 
+                         url, user, password));
+        tryBlock.appendChild(connStmt);
+        
+        // Set SQLCODE to 0
+        Element sqlCodeStmt = javaDoc.createElement("statement");
+        sqlCodeStmt.setAttribute("type", "assignment");
+        sqlCodeStmt.setAttribute("expression", "sqlcode = 0");
+        tryBlock.appendChild(sqlCodeStmt);
+        
+        // Catch block
+        Element catchBlock = javaDoc.createElement("catch-block");
+        catchBlock.setAttribute("exception", "SQLException");
+        catchBlock.setAttribute("variable", "e");
+        methodBody.appendChild(catchBlock);
+        
+        Element catchStmt = javaDoc.createElement("statement");
+        catchStmt.setAttribute("type", "assignment");
+        catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+        catchBlock.appendChild(catchStmt);
+    }
+
+    private static void processDisconnectStatement(Document javaDoc, Element methodBody) {
+        Element tryBlock = javaDoc.createElement("try-block");
+        methodBody.appendChild(tryBlock);
+        
+        Element ifStmt = javaDoc.createElement("if");
+        ifStmt.setAttribute("condition", "connection != null && !connection.isClosed()");
+        tryBlock.appendChild(ifStmt);
+        
+        Element closeStmt = javaDoc.createElement("statement");
+        closeStmt.setAttribute("type", "method-call");
+        closeStmt.setAttribute("expression", "connection.close()");
+        ifStmt.appendChild(closeStmt);
+        
+        Element catchBlock = javaDoc.createElement("catch-block");
+        catchBlock.setAttribute("exception", "SQLException");
+        catchBlock.setAttribute("variable", "e");
+        methodBody.appendChild(catchBlock);
+        
+        Element printStmt = javaDoc.createElement("statement");
+        printStmt.setAttribute("type", "method-call");
+        printStmt.setAttribute("expression", "e.printStackTrace()");
+        catchBlock.appendChild(printStmt);
+    }
+
+    private static void processSelectStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        // Extract SQL query and variables
+        String cleanSql = cleanSqlQuery(sqlContent);
+        List<String> intoVars = extractIntoVariables(sqlContent);
+        List<String> whereVars = extractWhereVariables(sqlContent);
+        
+        Element tryBlock = javaDoc.createElement("try-block");
+        methodBody.appendChild(tryBlock);
+        
+        // Create PreparedStatement
+        Element pstmtDecl = javaDoc.createElement("statement");
+        pstmtDecl.setAttribute("type", "declaration");
+        pstmtDecl.setAttribute("varType", "PreparedStatement");
+        pstmtDecl.setAttribute("varName", "pstmt");
+        pstmtDecl.setAttribute("expression", "connection.prepareStatement(\"" + cleanSql + "\")");
+        tryBlock.appendChild(pstmtDecl);
+        
+        // Set parameters
+        int paramIndex = 1;
+        for (String var : whereVars) {
+            Element setParam = javaDoc.createElement("statement");
+            setParam.setAttribute("type", "method-call");
+            String varName = sanitizeNameForIdentifier(var);
+            String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setString(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("int")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setInt(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("BigDecimal")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setBigDecimal(%d, %s)", paramIndex++, varName));
+            }
+            tryBlock.appendChild(setParam);
+        }
+        
+        // Execute query
+        Element rsDecl = javaDoc.createElement("statement");
+        rsDecl.setAttribute("type", "declaration");
+        rsDecl.setAttribute("varType", "ResultSet");
+        rsDecl.setAttribute("varName", "rs");
+        rsDecl.setAttribute("expression", "pstmt.executeQuery()");
+        tryBlock.appendChild(rsDecl);
+        
+        // Process results
+        Element ifNext = javaDoc.createElement("if");
+        ifNext.setAttribute("condition", "rs.next()");
+        tryBlock.appendChild(ifNext);
+        
+        // Get values from ResultSet
+        int colIndex = 1;
+        for (String var : intoVars) {
+            Element getVal = javaDoc.createElement("statement");
+            getVal.setAttribute("type", "assignment");
+            String varName = sanitizeNameForIdentifier(var);
+            String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                getVal.setAttribute("expression", 
+                    String.format("%s = rs.getString(%d)", varName, colIndex++));
+            } else if (varType.equals("int")) {
+                getVal.setAttribute("expression", 
+                    String.format("%s = rs.getInt(%d)", varName, colIndex++));
+            } else if (varType.equals("BigDecimal")) {
+                getVal.setAttribute("expression", 
+                    String.format("%s = rs.getBigDecimal(%d)", varName, colIndex++));
+            }
+            ifNext.appendChild(getVal);
+        }
+        
+        // Set SQLCODE = 0 for success
+        Element successCode = javaDoc.createElement("statement");
+        successCode.setAttribute("type", "assignment");
+        successCode.setAttribute("expression", "sqlcode = 0");
+        ifNext.appendChild(successCode);
+        
+        // Else block for no results
+        Element elseBlock = javaDoc.createElement("else");
+        ifNext.appendChild(elseBlock);
+        
+        Element notFoundCode = javaDoc.createElement("statement");
+        notFoundCode.setAttribute("type", "assignment");
+        notFoundCode.setAttribute("expression", "sqlcode = 100");
+        elseBlock.appendChild(notFoundCode);
+        
+        // Close resources
+        Element closeRs = javaDoc.createElement("statement");
+        closeRs.setAttribute("type", "method-call");
+        closeRs.setAttribute("expression", "rs.close()");
+        tryBlock.appendChild(closeRs);
+        
+        Element closePstmt = javaDoc.createElement("statement");
+        closePstmt.setAttribute("type", "method-call");
+        closePstmt.setAttribute("expression", "pstmt.close()");
+        tryBlock.appendChild(closePstmt);
+        
+        // Catch block
+        Element catchBlock = javaDoc.createElement("catch-block");
+        catchBlock.setAttribute("exception", "SQLException");
+        catchBlock.setAttribute("variable", "e");
+        methodBody.appendChild(catchBlock);
+        
+        Element catchStmt = javaDoc.createElement("statement");
+        catchStmt.setAttribute("type", "assignment");
+        catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+        catchBlock.appendChild(catchStmt);
+    }
+
+    private static void processInsertStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        String cleanSql = cleanSqlQuery(sqlContent);
+        List<String> valueVars = extractValueVariables(sqlContent);
+        
+        Element tryBlock = javaDoc.createElement("try-block");
+        methodBody.appendChild(tryBlock);
+        
+        // Create PreparedStatement
+        Element pstmtDecl = javaDoc.createElement("statement");
+        pstmtDecl.setAttribute("type", "declaration");
+        pstmtDecl.setAttribute("varType", "PreparedStatement");
+        pstmtDecl.setAttribute("varName", "pstmt");
+        pstmtDecl.setAttribute("expression", "connection.prepareStatement(\"" + cleanSql + "\")");
+        tryBlock.appendChild(pstmtDecl);
+        
+        // Set parameters
+        int paramIndex = 1;
+        for (String var : valueVars) {
+            Element setParam = javaDoc.createElement("statement");
+            setParam.setAttribute("type", "method-call");
+            String varName = sanitizeNameForIdentifier(var);
+            String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setString(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("int")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setInt(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("BigDecimal")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setBigDecimal(%d, %s)", paramIndex++, varName));
+            }
+            tryBlock.appendChild(setParam);
+        }
+        
+        // Execute update
+        Element execUpdate = javaDoc.createElement("statement");
+        execUpdate.setAttribute("type", "declaration");
+        execUpdate.setAttribute("varType", "int");
+        execUpdate.setAttribute("varName", "rowsAffected");
+        execUpdate.setAttribute("expression", "pstmt.executeUpdate()");
+        tryBlock.appendChild(execUpdate);
+        
+        // Set SQLCODE
+        Element sqlCodeStmt = javaDoc.createElement("statement");
+        sqlCodeStmt.setAttribute("type", "assignment");
+        sqlCodeStmt.setAttribute("expression", "sqlcode = (rowsAffected > 0) ? 0 : 100");
+        tryBlock.appendChild(sqlCodeStmt);
+        
+        // Close statement
+        Element closePstmt = javaDoc.createElement("statement");
+        closePstmt.setAttribute("type", "method-call");
+        closePstmt.setAttribute("expression", "pstmt.close()");
+        tryBlock.appendChild(closePstmt);
+        
+        // Catch block
+        Element catchBlock = javaDoc.createElement("catch-block");
+        catchBlock.setAttribute("exception", "SQLException");
+        catchBlock.setAttribute("variable", "e");
+        methodBody.appendChild(catchBlock);
+        
+        Element catchStmt = javaDoc.createElement("statement");
+        catchStmt.setAttribute("type", "assignment");
+        catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+        catchBlock.appendChild(catchStmt);
+    }
+
+    private static void processUpdateStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        // Similar to INSERT but with UPDATE syntax
+        String cleanSql = cleanSqlQuery(sqlContent);
+        List<String> setVars = extractSetVariables(sqlContent);
+        List<String> whereVars = extractWhereVariables(sqlContent);
+        
+        Element tryBlock = javaDoc.createElement("try-block");
+        methodBody.appendChild(tryBlock);
+        
+        // Create PreparedStatement
+        Element pstmtDecl = javaDoc.createElement("statement");
+        pstmtDecl.setAttribute("type", "declaration");
+        pstmtDecl.setAttribute("varType", "PreparedStatement");
+        pstmtDecl.setAttribute("varName", "pstmt");
+        pstmtDecl.setAttribute("expression", "connection.prepareStatement(\"" + cleanSql + "\")");
+        tryBlock.appendChild(pstmtDecl);
+        
+        // Set parameters (SET clause parameters first, then WHERE clause)
+        int paramIndex = 1;
+        
+        // Set SET clause parameters
+        for (String var : setVars) {
+            Element setParam = javaDoc.createElement("statement");
+            setParam.setAttribute("type", "method-call");
+            String varName = sanitizeNameForIdentifier(var);
+            String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setString(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("int")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setInt(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("BigDecimal")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setBigDecimal(%d, %s)", paramIndex++, varName));
+            }
+            tryBlock.appendChild(setParam);
+        }
+        
+        // Set WHERE clause parameters
+        for (String var : whereVars) {
+            Element setParam = javaDoc.createElement("statement");
+            setParam.setAttribute("type", "method-call");
+            String varName = sanitizeNameForIdentifier(var);
+            String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setString(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("int")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setInt(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("BigDecimal")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setBigDecimal(%d, %s)", paramIndex++, varName));
+            }
+            tryBlock.appendChild(setParam);
+        }
+        
+        // Execute update
+        Element execUpdate = javaDoc.createElement("statement");
+        execUpdate.setAttribute("type", "declaration");
+        execUpdate.setAttribute("varType", "int");
+        execUpdate.setAttribute("varName", "rowsAffected");
+        execUpdate.setAttribute("expression", "pstmt.executeUpdate()");
+        tryBlock.appendChild(execUpdate);
+        
+        // Set SQLCODE
+        Element sqlCodeStmt = javaDoc.createElement("statement");
+        sqlCodeStmt.setAttribute("type", "assignment");
+        sqlCodeStmt.setAttribute("expression", "sqlcode = (rowsAffected > 0) ? 0 : 100");
+        tryBlock.appendChild(sqlCodeStmt);
+        
+        // Close statement
+        Element closePstmt = javaDoc.createElement("statement");
+        closePstmt.setAttribute("type", "method-call");
+        closePstmt.setAttribute("expression", "pstmt.close()");
+        tryBlock.appendChild(closePstmt);
+        
+        // Catch block
+        Element catchBlock = javaDoc.createElement("catch-block");
+        catchBlock.setAttribute("exception", "SQLException");
+        catchBlock.setAttribute("variable", "e");
+        methodBody.appendChild(catchBlock);
+        
+        Element catchStmt = javaDoc.createElement("statement");
+        catchStmt.setAttribute("type", "assignment");
+        catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+        catchBlock.appendChild(catchStmt);
+    }
+
+    private static void processOpenCursorStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        Pattern pattern = Pattern.compile("OPEN\\s+(\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sqlContent);
+        
+        if (matcher.find()) {
+            String cursorName = matcher.group(1).toLowerCase();
+            String cursorFieldName = "cursor" + sanitizeNameForClass(cursorName);
+            String rsFieldName = "rs" + sanitizeNameForClass(cursorName);
+            
+            Element tryBlock = javaDoc.createElement("try-block");
+            methodBody.appendChild(tryBlock);
+            
+            // Get the SQL query from declared cursors
+            String sqlQuery = declaredCursors.get(cursorName.toUpperCase());
+            if (sqlQuery != null) {
+                // Create PreparedStatement for cursor
+                Element pstmtStmt = javaDoc.createElement("statement");
+                pstmtStmt.setAttribute("type", "assignment");
+                pstmtStmt.setAttribute("expression", 
+                    cursorFieldName + " = connection.prepareStatement(\"" + sqlQuery + "\")");
+                tryBlock.appendChild(pstmtStmt);
+                
+                // Set parameters if any
+                List<String> cursorVars = extractWhereVariables(sqlQuery);
+                int paramIndex = 1;
+                for (String var : cursorVars) {
+                    Element setParam = javaDoc.createElement("statement");
+                    setParam.setAttribute("type", "method-call");
+                    String varName = sanitizeNameForIdentifier(var);
+                    String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+                    
+                    if (varType.equals("String")) {
+                        setParam.setAttribute("expression", 
+                            String.format("%s.setString(%d, %s)", cursorFieldName, paramIndex++, varName));
+                    } else if (varType.equals("int")) {
+                        setParam.setAttribute("expression", 
+                            String.format("%s.setInt(%d, %s)", cursorFieldName, paramIndex++, varName));
+                    } else if (varType.equals("BigDecimal")) {
+                        setParam.setAttribute("expression", 
+                            String.format("%s.setBigDecimal(%d, %s)", cursorFieldName, paramIndex++, varName));
+                    }
+                    tryBlock.appendChild(setParam);
+                }
+                
+                // Execute query
+                Element execStmt = javaDoc.createElement("statement");
+                execStmt.setAttribute("type", "assignment");
+                execStmt.setAttribute("expression", rsFieldName + " = " + cursorFieldName + ".executeQuery()");
+                tryBlock.appendChild(execStmt);
+                
+                Element sqlCodeStmt = javaDoc.createElement("statement");
+                sqlCodeStmt.setAttribute("type", "assignment");
+                sqlCodeStmt.setAttribute("expression", "sqlcode = 0");
+                tryBlock.appendChild(sqlCodeStmt);
+            }
+            
+            // Catch block
+            Element catchBlock = javaDoc.createElement("catch-block");
+            catchBlock.setAttribute("exception", "SQLException");
+            catchBlock.setAttribute("variable", "e");
+            methodBody.appendChild(catchBlock);
+            
+            Element catchStmt = javaDoc.createElement("statement");
+            catchStmt.setAttribute("type", "assignment");
+            catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+            catchBlock.appendChild(catchStmt);
+        }
+    }
+
+    private static void processFetchStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        Pattern pattern = Pattern.compile("FETCH\\s+(\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sqlContent);
+        
+        if (matcher.find()) {
+            String cursorName = matcher.group(1).toLowerCase();
+            String rsFieldName = "rs" + sanitizeNameForClass(cursorName);
+            
+            List<String> intoVars = extractIntoVariables(sqlContent);
+            
+            Element tryBlock = javaDoc.createElement("try-block");
+            methodBody.appendChild(tryBlock);
+            
+            // Check if ResultSet has next
+            Element ifNext = javaDoc.createElement("if");
+            ifNext.setAttribute("condition", rsFieldName + ".next()");
+            tryBlock.appendChild(ifNext);
+            
+            // Get values from ResultSet
+            int colIndex = 1;
+            for (String var : intoVars) {
+                Element getVal = javaDoc.createElement("statement");
+                getVal.setAttribute("type", "assignment");
+                String varName = sanitizeNameForIdentifier(var);
+                String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+                
+                if (varType.equals("String")) {
+                    getVal.setAttribute("expression", 
+                        String.format("%s = %s.getString(%d)", varName, rsFieldName, colIndex++));
+                } else if (varType.equals("int")) {
+                    getVal.setAttribute("expression", 
+                        String.format("%s = %s.getInt(%d)", varName, rsFieldName, colIndex++));
+                } else if (varType.equals("BigDecimal")) {
+                    getVal.setAttribute("expression", 
+                        String.format("%s = %s.getBigDecimal(%d)", varName, rsFieldName, colIndex++));
+                }
+                ifNext.appendChild(getVal);
+            }
+            
+            // Set SQLCODE = 0 for success
+            Element successCode = javaDoc.createElement("statement");
+            successCode.setAttribute("type", "assignment");
+            successCode.setAttribute("expression", "sqlcode = 0");
+            ifNext.appendChild(successCode);
+            
+            // Else block for end of cursor
+            Element elseBlock = javaDoc.createElement("else");
+            ifNext.appendChild(elseBlock);
+            
+            Element endCode = javaDoc.createElement("statement");
+            endCode.setAttribute("type", "assignment");
+            endCode.setAttribute("expression", "sqlcode = 100");
+            elseBlock.appendChild(endCode);
+            
+            // Catch block
+            Element catchBlock = javaDoc.createElement("catch-block");
+            catchBlock.setAttribute("exception", "SQLException");
+            catchBlock.setAttribute("variable", "e");
+            methodBody.appendChild(catchBlock);
+            
+            Element catchStmt = javaDoc.createElement("statement");
+            catchStmt.setAttribute("type", "assignment");
+            catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+            catchBlock.appendChild(catchStmt);
+        }
+    }
+
+    private static void processCloseCursorStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        Pattern pattern = Pattern.compile("CLOSE\\s+(\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sqlContent);
+        
+        if (matcher.find()) {
+            String cursorName = matcher.group(1).toLowerCase();
+            String cursorFieldName = "cursor" + sanitizeNameForClass(cursorName);
+            String rsFieldName = "rs" + sanitizeNameForClass(cursorName);
+            
+            Element tryBlock = javaDoc.createElement("try-block");
+            methodBody.appendChild(tryBlock);
+            
+            // Close ResultSet
+            Element ifRsNotNull = javaDoc.createElement("if");
+            ifRsNotNull.setAttribute("condition", rsFieldName + " != null");
+            tryBlock.appendChild(ifRsNotNull);
+            
+            Element closeRs = javaDoc.createElement("statement");
+            closeRs.setAttribute("type", "method-call");
+            closeRs.setAttribute("expression", rsFieldName + ".close()");
+            ifRsNotNull.appendChild(closeRs);
+            
+            // Close PreparedStatement
+            Element ifPstmtNotNull = javaDoc.createElement("if");
+            ifPstmtNotNull.setAttribute("condition", cursorFieldName + " != null");
+            tryBlock.appendChild(ifPstmtNotNull);
+            
+            Element closePstmt = javaDoc.createElement("statement");
+            closePstmt.setAttribute("type", "method-call");
+            closePstmt.setAttribute("expression", cursorFieldName + ".close()");
+            ifPstmtNotNull.appendChild(closePstmt);
+            
+            Element sqlCodeStmt = javaDoc.createElement("statement");
+            sqlCodeStmt.setAttribute("type", "assignment");
+            sqlCodeStmt.setAttribute("expression", "sqlcode = 0");
+            tryBlock.appendChild(sqlCodeStmt);
+            
+            // Catch block
+            Element catchBlock = javaDoc.createElement("catch-block");
+            catchBlock.setAttribute("exception", "SQLException");
+            catchBlock.setAttribute("variable", "e");
+            methodBody.appendChild(catchBlock);
+            
+            Element catchStmt = javaDoc.createElement("statement");
+            catchStmt.setAttribute("type", "assignment");
+            catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+            catchBlock.appendChild(catchStmt);
+        }
+    }
+
+    private static void processDeleteStatement(String sqlContent, Document javaDoc, Element methodBody) {
+        String cleanSql = cleanSqlQuery(sqlContent);
+        List<String> whereVars = extractWhereVariables(sqlContent);
+        
+        Element tryBlock = javaDoc.createElement("try-block");
+        methodBody.appendChild(tryBlock);
+        
+        // Create PreparedStatement
+        Element pstmtDecl = javaDoc.createElement("statement");
+        pstmtDecl.setAttribute("type", "declaration");
+        pstmtDecl.setAttribute("varType", "PreparedStatement");
+        pstmtDecl.setAttribute("varName", "pstmt");
+        pstmtDecl.setAttribute("expression", "connection.prepareStatement(\"" + cleanSql + "\")");
+        tryBlock.appendChild(pstmtDecl);
+        
+        // Set parameters
+        int paramIndex = 1;
+        for (String var : whereVars) {
+            Element setParam = javaDoc.createElement("statement");
+            setParam.setAttribute("type", "method-call");
+            String varName = sanitizeNameForIdentifier(var);
+            String varType = declaredFields.getOrDefault(var.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setString(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("int")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setInt(%d, %s)", paramIndex++, varName));
+            } else if (varType.equals("BigDecimal")) {
+                setParam.setAttribute("expression", 
+                    String.format("pstmt.setBigDecimal(%d, %s)", paramIndex++, varName));
+            }
+            tryBlock.appendChild(setParam);
+        }
+        
+        // Execute update
+        Element execUpdate = javaDoc.createElement("statement");
+        execUpdate.setAttribute("type", "declaration");
+        execUpdate.setAttribute("varType", "int");
+        execUpdate.setAttribute("varName", "rowsAffected");
+        execUpdate.setAttribute("expression", "pstmt.executeUpdate()");
+        tryBlock.appendChild(execUpdate);
+        
+        // Set SQLCODE
+        Element sqlCodeStmt = javaDoc.createElement("statement");
+        sqlCodeStmt.setAttribute("type", "assignment");
+        sqlCodeStmt.setAttribute("expression", "sqlcode = (rowsAffected > 0) ? 0 : 100");
+        tryBlock.appendChild(sqlCodeStmt);
+        
+        // Close statement
+        Element closePstmt = javaDoc.createElement("statement");
+        closePstmt.setAttribute("type", "method-call");
+        closePstmt.setAttribute("expression", "pstmt.close()");
+        tryBlock.appendChild(closePstmt);
+        
+        // Catch block
+        Element catchBlock = javaDoc.createElement("catch-block");
+        catchBlock.setAttribute("exception", "SQLException");
+        catchBlock.setAttribute("variable", "e");
+        methodBody.appendChild(catchBlock);
+        
+        Element catchStmt = javaDoc.createElement("statement");
+        catchStmt.setAttribute("type", "assignment");
+        catchStmt.setAttribute("expression", "sqlcode = e.getErrorCode()");
+        catchBlock.appendChild(catchStmt);
+    }
+
+    // Metodi helper per l'estrazione di SQL
+    
+    private static String extractSqlContent(Element sqlNode) {
+        StringBuilder sql = new StringBuilder();
+        NodeList children = sqlNode.getChildNodes();
+        
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE) {
+                String text = child.getTextContent();
+                if (text.contains("EXECSQL")) {
+                    text = text.replaceAll("\\*>EXECSQL\\s*", "");
+                    text = text.replaceAll("EXEC SQL\\s*", "");
+                    text = text.replaceAll("END-EXEC.*", "");
+                    sql.append(text).append(" ");
+                }
+            }
+        }
+        
+        return sql.toString().trim();
+    }
+
+    private static String extractSqlQuery(String sqlContent) {
+        // Remove DECLARE CURSOR FOR
+        String query = sqlContent.replaceAll("(?i)DECLARE\\s+\\w+\\s+CURSOR\\s+FOR\\s+", "");
+        return cleanSqlQuery(query);
+    }
+
+    private static String cleanSqlQuery(String sql) {
+        // Replace COBOL variables with ?
+        String cleaned = sql.replaceAll(":\\w+", "?");
+        // Remove multiple spaces
+        cleaned = cleaned.replaceAll("\\s+", " ");
+        // Handle CURRENT_DATE
+        cleaned = cleaned.replaceAll("\\?", "?");
+        cleaned = cleaned.replaceAll("CURRENT_DATE", "CURRENT_DATE");
+        return cleaned.trim();
+    }
+
+    private static List<String> extractIntoVariables(String sql) {
+        List<String> vars = new ArrayList<>();
+        Pattern pattern = Pattern.compile("INTO\\s+:([\\w-]+)(?:\\s*,\\s*:([\\w-]+))*", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sql);
+        
+        if (matcher.find()) {
+            // Extract all groups
+            String fullMatch = matcher.group(0);
+            Pattern varPattern = Pattern.compile(":([\\w-]+)");
+            Matcher varMatcher = varPattern.matcher(fullMatch);
+            
+            while (varMatcher.find()) {
+                vars.add(varMatcher.group(1));
+            }
+        }
+        
+        return vars;
+    }
+
+    private static List<String> extractWhereVariables(String sql) {
+        List<String> vars = new ArrayList<>();
+        Pattern pattern = Pattern.compile("WHERE.*", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sql);
+        
+        if (matcher.find()) {
+            String whereClause = matcher.group(0);
+            Pattern varPattern = Pattern.compile(":([\\w-]+)");
+            Matcher varMatcher = varPattern.matcher(whereClause);
+            
+            while (varMatcher.find()) {
+                vars.add(varMatcher.group(1));
+            }
+        }
+        
+        return vars;
+    }
+
+    private static List<String> extractValueVariables(String sql) {
+        List<String> vars = new ArrayList<>();
+        Pattern pattern = Pattern.compile("VALUES\\s*\\(([^)]+)\\)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sql);
+        
+        if (matcher.find()) {
+            String values = matcher.group(1);
+            Pattern varPattern = Pattern.compile(":([\\w-]+)");
+            Matcher varMatcher = varPattern.matcher(values);
+            
+            while (varMatcher.find()) {
+                vars.add(varMatcher.group(1));
+            }
+        }
+        
+        return vars;
+    }
+
+    private static List<String> extractSetVariables(String sql) {
+        List<String> vars = new ArrayList<>();
+        Pattern pattern = Pattern.compile("SET.*?(?=WHERE|$)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(sql);
+        
+        if (matcher.find()) {
+            String setClause = matcher.group(0);
+            Pattern varPattern = Pattern.compile(":([\\w-]+)");
+            Matcher varMatcher = varPattern.matcher(setClause);
+            
+            while (varMatcher.find()) {
+                vars.add(varMatcher.group(1));
+            }
+        }
+        
+        return vars;
+    }
+
+    // Altri metodi per processare statement non-SQL
+
+    private static void processAcceptStatement(Element acceptStmt, Element javaStmt) {
+        javaStmt.setAttribute("type", "input");
+        
+        Node identifierNode = findDeepChildByName(acceptStmt, "identifier");
+        if (identifierNode != null) {
+            String identifier = extractIdentifier(identifierNode);
+            String varType = declaredFields.getOrDefault(identifier.toUpperCase(), "String");
+            
+            if (varType.equals("String")) {
+                javaStmt.setAttribute("expression", identifier + " = scanner.nextLine()");
+            } else if (varType.equals("int")) {
+                javaStmt.setAttribute("expression", identifier + " = scanner.nextInt()");
+            } else if (varType.equals("BigDecimal")) {
+                javaStmt.setAttribute("expression", identifier + " = scanner.nextBigDecimal()");
+            }
+        }
+    }
+
+    private static void processComputeStatement(Element computeStmt, Element javaStmt) {
+        javaStmt.setAttribute("type", "arithmetic");
+        
+        Node storeNode = findDeepChildByName(computeStmt, "computeStore");
+        Node exprNode = findDeepChildByName(computeStmt, "arithmeticExpression");
+        
+        if (storeNode != null && exprNode != null) {
+            String target = extractIdentifier(storeNode);
+            String expression = extractArithmeticExpression(exprNode);
+            javaStmt.setAttribute("expression", target + " = " + expression);
+        }
+    }
+
+    private static void processIfStatement(Element ifStmt, Element javaStmt, Document javaDoc, Element methodBody) {
+        Element ifElement = javaDoc.createElement("if");
+        
+        // Extract condition
+        Node conditionNode = findDeepChildByName(ifStmt, "condition");
+        if (conditionNode != null) {
+            String condition = extractCondition(conditionNode);
+            ifElement.setAttribute("condition", condition);
+        }
+        
+        // Process THEN part
+        Node ifThenNode = findChildNodeByName(ifStmt, "ifThen");
+        if (ifThenNode != null) {
+            Element thenBlock = javaDoc.createElement("then");
+            ifElement.appendChild(thenBlock);
+            
+            NodeList statements = ((Element)ifThenNode).getElementsByTagName("statement");
+            for (int i = 0; i < statements.getLength(); i++) {
+                Element statement = (Element) statements.item(i);
+                Node statementTypeNode = getFirstElementChild(statement);
+                if (statementTypeNode != null) {
+                    processStatement((Element) statementTypeNode, javaDoc, thenBlock);
+                }
+            }
+        }
+        
+        // Process ELSE part
+        Node ifElseNode = findChildNodeByName(ifStmt, "ifElse");
+        if (ifElseNode != null) {
+            Element elseBlock = javaDoc.createElement("else");
+            ifElement.appendChild(elseBlock);
+            
+            NodeList statements = ((Element)ifElseNode).getElementsByTagName("statement");
+            for (int i = 0; i < statements.getLength(); i++) {
+                Element statement = (Element) statements.item(i);
+                Node statementTypeNode = getFirstElementChild(statement);
+                if (statementTypeNode != null) {
+                    processStatement((Element) statementTypeNode, javaDoc, elseBlock);
+                }
+            }
+        }
+        
+        methodBody.appendChild(ifElement);
+    }
+
+    private static void processEvaluateStatement(Element evalStmt, Element javaStmt, Document javaDoc, Element methodBody) {
+        Element switchElement = javaDoc.createElement("switch");
+        
+        // Extract the variable being evaluated
+        Node selectNode = findDeepChildByName(evalStmt, "evaluateSelect");
+        if (selectNode != null) {
+            String variable = extractIdentifier(selectNode);
+            switchElement.setAttribute("expression", variable);
+        }
+        
+        // Process WHEN clauses
+        NodeList whenPhrases = evalStmt.getElementsByTagName("evaluateWhenPhrase");
+        for (int i = 0; i < whenPhrases.getLength(); i++) {
+            Element whenPhrase = (Element) whenPhrases.item(i);
+            
+            Element caseElement = javaDoc.createElement("case");
+            
+            // Extract the value
+            Node valueNode = findDeepChildByName(whenPhrase, "evaluateValue");
+            if (valueNode != null) {
+                String value = extractLiteralValue(valueNode);
+                caseElement.setAttribute("value", value);
+            }
+            
+            switchElement.appendChild(caseElement);
+            
+            // Process statements in this WHEN
+            NodeList statements = whenPhrase.getElementsByTagName("statement");
+            for (int j = 0; j < statements.getLength(); j++) {
+                Element statement = (Element) statements.item(j);
+                Node statementTypeNode = getFirstElementChild(statement);
+                if (statementTypeNode != null) {
+                    processStatement((Element) statementTypeNode, javaDoc, caseElement);
+                }
+            }
+            
+            // Add break
+            Element breakStmt = javaDoc.createElement("statement");
+            breakStmt.setAttribute("type", "break");
+            caseElement.appendChild(breakStmt);
+        }
+        
+        // Process WHEN OTHER
+        Node whenOther = findChildNodeByName(evalStmt, "evaluateWhenOther");
+        if (whenOther != null) {
+            Element defaultElement = javaDoc.createElement("default");
+            switchElement.appendChild(defaultElement);
+            
+            NodeList statements = ((Element)whenOther).getElementsByTagName("statement");
+            for (int i = 0; i < statements.getLength(); i++) {
+                Element statement = (Element) statements.item(i);
+                Node statementTypeNode = getFirstElementChild(statement);
+                if (statementTypeNode != null) {
+                    processStatement((Element) statementTypeNode, javaDoc, defaultElement);
+                }
+            }
+        }
+        
+        methodBody.appendChild(switchElement);
+    }
+
+    private static void processOpenStatement(Element openStmt, Element javaStmt) {
+        javaStmt.setAttribute("type", "file-open");
+        
+        Node fileNameNode = findDeepChildByName(openStmt, "fileName");
+        if (fileNameNode != null) {
+            String fileName = extractTextFromNode(fileNameNode);
+            
+            // Check if it's OUTPUT or INPUT
+            if (openStmt.getElementsByTagName("openOutputStatement").getLength() > 0) {
+                javaStmt.setAttribute("expression", 
+                    fileName.toLowerCase() + " = new PrintWriter(new FileWriter(\"ESTRATTO-CONTO.TXT\"))");
+            } else {
+                javaStmt.setAttribute("expression", 
+                    fileName.toLowerCase() + " = new BufferedReader(new FileReader(\"ESTRATTO-CONTO.TXT\"))");
+            }
+        }
+    }
+
+    private static void processCloseStatement(Element closeStmt, Element javaStmt) {
+        javaStmt.setAttribute("type", "file-close");
+        
+        Node fileNameNode = findDeepChildByName(closeStmt, "fileName");
+        if (fileNameNode != null) {
+            String fileName = extractTextFromNode(fileNameNode);
+            javaStmt.setAttribute("expression", fileName.toLowerCase() + ".close()");
+        }
+    }
+
+    private static void processWriteStatement(Element writeStmt, Element javaStmt) {
+        javaStmt.setAttribute("type", "file-write");
+        
+        Node recordNode = findDeepChildByName(writeStmt, "recordName");
+        Node fromNode = findDeepChildByName(writeStmt, "writeFromPhrase");
+        
+        if (recordNode != null) {
+            String recordName = extractIdentifier(recordNode);
+            
+            if (fromNode != null) {
+                Node fromIdentifier = findDeepChildByName(fromNode, "identifier");
+                if (fromIdentifier != null) {
+                    String fromVar = extractIdentifier(fromIdentifier);
+                    javaStmt.setAttribute("expression", "reportFile.println(" + fromVar + ")");
+                }
+            } else {
+                javaStmt.setAttribute("expression", "reportFile.println(" + recordName + ")");
+            }
+        }
+    }
+
+    private static void processStringStatement(Element stringStmt, Element javaStmt) {
+        javaStmt.setAttribute("type", "string-concat");
+        
+        StringBuilder expression = new StringBuilder();
+        Node intoNode = findDeepChildByName(stringStmt, "stringIntoPhrase");
+        
+        if (intoNode != null) {
+            String intoVar = extractIdentifier(intoNode);
+            expression.append(intoVar).append(" = ");
+            
+            // Get all string sending elements
+            NodeList sendingNodes = stringStmt.getElementsByTagName("stringSending");
+            for (int i = 0; i < sendingNodes.getLength(); i++) {
+                if (i > 0) expression.append(" + ");
+                
+                Element sending = (Element) sendingNodes.item(i);
+                Node literalNode = findDeepChildByName(sending, "literal");
+                Node identifierNode = findDeepChildByName(sending, "identifier");
+                
+                if (literalNode != null) {
+                    expression.append(extractLiteralValue(literalNode));
+                } else if (identifierNode != null) {
+                    expression.append(extractIdentifier(identifierNode));
+                }
+            }
+            
+            javaStmt.setAttribute("expression", expression.toString());
+        }
+    }
+
+    private static String extractCondition(Node conditionNode) {
+        // Simplified condition extraction
+        StringBuilder condition = new StringBuilder();
+        
+        Node relationNode = findDeepChildByName(conditionNode, "relationCondition");
+        if (relationNode != null) {
+            Node leftNode = findDeepChildByName(relationNode, "arithmeticExpression");
+            Node operatorNode = findDeepChildByName(relationNode, "relationalOperator");
+            
+            if (leftNode != null) {
+                String left = extractArithmeticExpression(leftNode);
+                String operator = extractRelationalOperator(operatorNode);
+                
+                // Find the right side (second arithmeticExpression)
+                NodeList arithNodes = ((Element)relationNode).getElementsByTagName("arithmeticExpression");
+                if (arithNodes.getLength() > 1) {
+                    String right = extractArithmeticExpression(arithNodes.item(1));
+                    condition.append(left).append(" ").append(operator).append(" ").append(right);
+                }
+            }
+        }
+        
+        // Handle AND/OR conditions
+        Node andOrNode = findDeepChildByName(conditionNode, "andOrCondition");
+        if (andOrNode != null) {
+            String operator = extractTextFromNode(andOrNode).contains("OR") ? " || " : " && ";
+            Node abbrevNode = findDeepChildByName(andOrNode, "abbreviation");
+            if (abbrevNode != null) {
+                condition.append(operator).append(extractArithmeticExpression(abbrevNode));
+            }
+        }
+        
+        return condition.toString();
+    }
+
+    private static String extractArithmeticExpression(Node exprNode) {
+        // Simplified arithmetic expression extraction
+        return extractTextFromNode(exprNode).replaceAll("\\s+", " ").trim();
+    }
+
+    private static String extractRelationalOperator(Node operatorNode) {
+        if (operatorNode == null) return "==";
+        
+        String operator = extractTextFromNode(operatorNode);
+        if (operator.contains("NOT") && operator.contains("=")) return "!=";
+        if (operator.contains("=")) return "==";
+        if (operator.contains(">=")) return ">=";
+        if (operator.contains("<=")) return "<=";
+        if (operator.contains(">")) return ">";
+        if (operator.contains("<")) return "<";
+        
+        return "==";
+    }
+    
     private static void processDisplayStatement(Element displayStmt, Element javaStmt) {
         javaStmt.setAttribute("type", "println");
         
@@ -229,6 +1328,13 @@ public class CobolToJavaXMLTransformer {
                 String identifier = extractIdentifier(identifierNode);
                 expression.append(identifier);
             }
+        }
+        
+        // Check for WITH NO ADVANCING
+        Node displayWithNode = findChildNodeByName(displayStmt, "displayWith");
+        if (displayWithNode != null && extractTextFromNode(displayWithNode).contains("NO ADVANCING")) {
+            // Use print instead of println
+            expression = new StringBuilder(expression.toString().replace("System.out.println(", "System.out.print("));
         }
         
         expression.append(")");
