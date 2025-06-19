@@ -9,42 +9,38 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Scanner;
 
 /**
  * Traduzione Java del programma COBOL GESTIONE-CONTI.
- * Questo programma gestisce le operazioni base di un sistema di conti correnti bancari,
+ * Questo programma gestisce le operazioni base di un conto corrente bancario,
  * interfacciandosi con un database PostgreSQL tramite JDBC.
  *
- * @author Annalisa Egidi (Original COBOL Author)
- * @author Advanced Source Code Compiler (Java Translator)
+ * @author ANNALISA-EGIDI (Tradotto da Compilatore Avanzato)
  * @version 2025-05-20
  */
 public class GestioneConti {
 
     // --- Configurazione Database ---
-    // DA SETTARE CORRETTAMENTE LE CREDENZIALI DEL DATABASE
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/banca";
     private static final String DB_USER = "postgres";
-    private static final String DB_PASSWORD = "password";
+    private static final String DB_PASSWORD = "password"; // Sostituire con la password reale
 
-    // --- Oggetti JDBC e di utility ---
+    // --- Connessione e I/O ---
     private Connection connection;
-    private final Scanner scanner;
-    private int sqlcode; // Simula SQLCODE di COBOL
+    private final Scanner scanner = new Scanner(System.in);
+    private static final DecimalFormat currencyFormatter = new DecimalFormat("###,##0.00");
 
-    // --- Variabili dalla WORKING-STORAGE SECTION ---
+    // --- Variabili di stato (simulano la WORKING-STORAGE) ---
     private int wsScelta = 0;
     private String wsContinua = "S";
-    
-    // Variabili per database
+    private String wsEsito;
+
+    // Variabili per operazioni
     private String wsNumeroConto;
     private String wsCodiceCliente;
     private BigDecimal wsImporto;
@@ -52,12 +48,12 @@ public class GestioneConti {
     private String wsTipoMovimento;
     private String wsCausale;
 
-    // Strutture dati per cliente
+    // Dati Cliente
     private String wsCliCodice;
     private String wsCliNome;
     private String wsCliCognome;
-    
-    // Strutture dati per conto
+
+    // Dati Conto
     private String wsConNumero;
     private String wsConCliente;
     private String wsConTipo;
@@ -66,112 +62,94 @@ public class GestioneConti {
     private String wsConStato;
     private BigDecimal wsConFido;
 
-    // Strutture dati per movimento (usate nel report)
+    // Dati Movimento (per estratto conto)
     private Timestamp wsMovData;
     private String wsMovTipo;
     private BigDecimal wsMovImporto;
     private String wsMovCausale;
     private BigDecimal wsMovSaldoDopo;
 
-    // Formattatori per output
-    private final DecimalFormat currencyFormatter;
+    // Simulazione SQLCODE
+    private int sqlcode = 0;
 
     /**
-     * Costruttore della classe. Inizializza lo scanner e il formattatore di valuta.
-     */
-    public GestioneConti() {
-        this.scanner = new Scanner(System.in);
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ITALY);
-        this.currencyFormatter = new DecimalFormat("###,##0.00", symbols);
-    }
-
-    /**
-     * Metodo main, punto di ingresso del programma.
+     * Metodo principale che avvia l'applicazione.
+     *
      * @param args Argomenti della riga di comando (non usati).
      */
     public static void main(String[] args) {
-        GestioneConti programma = new GestioneConti();
-        programma.mainLogic();
+        GestioneConti app = new GestioneConti();
+        app.mainLogic();
     }
 
     /**
-     * Logica principale del programma, che orchestra il menu e le operazioni.
-     * Corrisponde al paragrafo MAIN-LOGIC del COBOL.
+     * Contiene il flusso principale del programma, equivalente al paragrafo MAIN-LOGIC del COBOL.
      */
     public void mainLogic() {
-        if (!connettiDatabase()) {
+        if (!connectDatabase()) {
             return; // Esce se la connessione fallisce
         }
 
-        do {
-            visualizzaMenu();
-            try {
-                wsScelta = Integer.parseInt(scanner.nextLine());
-                elaboraScelta();
-            } catch (NumberFormatException e) {
-                System.out.println("Errore: Inserire un numero valido.");
-                wsScelta = -1; // Scelta non valida
-            }
+        try {
+            do {
+                displayMenu();
+                processChoice();
 
-            if (wsScelta != 0) {
-                System.out.println();
-                System.out.print("Continuare? (S/N): ");
-                wsContinua = scanner.nextLine().toUpperCase();
-            } else {
-                wsContinua = "N"; // Esce dal ciclo se la scelta è 0
-            }
+                if (wsScelta != 0) {
+                    System.out.println(" ");
+                    System.out.print("Continuare? (S/N): ");
+                    wsContinua = scanner.nextLine().toUpperCase();
+                } else {
+                    wsContinua = "N"; // Esce dal ciclo se la scelta è 0
+                }
 
-        } while (wsContinua.equalsIgnoreCase("S"));
+            } while (wsContinua.equalsIgnoreCase("S"));
 
-        disconnettiDatabase();
-        scanner.close();
-        System.out.println("Programma terminato.");
+        } finally {
+            disconnectDatabase();
+            scanner.close();
+            System.out.println("Programma terminato.");
+        }
     }
 
     /**
-     * Stabilisce la connessione al database.
-     * Corrisponde al paragrafo CONNETTI-DATABASE.
-     * @return true se la connessione ha successo, false altrimenti.
+     * Stabilisce la connessione al database PostgreSQL.
+     * Imposta auto-commit a false per gestire le transazioni manualmente.
+     *
+     * @return true se la connessione ha successo, altrimenti false.
      */
-    private boolean connettiDatabase() {
+    private boolean connectDatabase() {
         try {
             connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            connection.setAutoCommit(false); // Gestione manuale delle transazioni
-            sqlcode = 0;
-            System.out.println("Connessione al database stabilita.");
+            connection.setAutoCommit(false); // Fondamentale per la gestione delle transazioni
+            System.out.println("Connessione al database stabilita");
             return true;
         } catch (SQLException e) {
+            System.err.println("Errore connessione database: " + e.getMessage());
             handleSqlException(e);
-            System.err.println("Errore fatale di connessione al database: " + sqlcode);
-            e.printStackTrace();
             return false;
         }
     }
 
     /**
      * Chiude la connessione al database.
-     * Corrisponde al paragrafo DISCONNETTI-DATABASE.
      */
-    private void disconnettiDatabase() {
-        if (connection != null) {
-            try {
+    private void disconnectDatabase() {
+        try {
+            if (connection != null && !connection.isClosed()) {
                 connection.close();
-                System.out.println("Disconnesso dal database.");
-            } catch (SQLException e) {
-                handleSqlException(e);
-                System.err.println("Errore durante la disconnessione: " + sqlcode);
-                e.printStackTrace();
+                System.out.println("Disconnesso dal database");
             }
+        } catch (SQLException e) {
+            System.err.println("Errore durante la disconnessione: " + e.getMessage());
         }
     }
 
     /**
-     * Mostra il menu principale delle operazioni.
-     * Corrisponde al paragrafo VISUALIZZA-MENU.
+     * Visualizza il menu principale delle operazioni.
      */
-    private void visualizzaMenu() {
-        System.out.println();
-        System.out.println("===== SISTEMA GESTIONE CONTI CORRENTI =====");
+    private void displayMenu() {
+        System.out.println("\n===== SISTEMA GESTIONE CONTI CORRENTI =====");
         System.out.println("1. Apertura nuovo conto");
         System.out.println("2. Deposito");
         System.out.println("3. Prelievo");
@@ -181,31 +159,36 @@ public class GestioneConti {
         System.out.println("0. Esci");
         System.out.println("===========================================");
         System.out.print("Scelta: ");
+        try {
+            wsScelta = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            wsScelta = -1; // Scelta non valida
+        }
     }
 
     /**
      * Esegue l'azione corrispondente alla scelta dell'utente.
-     * Corrisponde al paragrafo ELABORA-SCELTA.
+     * Equivalente al paragrafo ELABORA-SCELTA.
      */
-    private void elaboraScelta() {
+    private void processChoice() {
         switch (wsScelta) {
             case 1:
-                aperturaConto();
+                openAccount();
                 break;
             case 2:
-                deposito();
+                makeDeposit();
                 break;
             case 3:
-                prelievo();
+                makeWithdrawal();
                 break;
             case 4:
-                visualizzaSaldo();
+                viewBalance();
                 break;
             case 5:
-                estrattoConto();
+                generateAccountStatement();
                 break;
             case 6:
-                chiusuraConto();
+                closeAccount();
                 break;
             case 0:
                 // L'uscita è gestita nel ciclo principale
@@ -218,272 +201,274 @@ public class GestioneConti {
 
     /**
      * Gestisce l'apertura di un nuovo conto corrente.
-     * Corrisponde al paragrafo APERTURA-CONTO.
+     * Esegue tutte le operazioni in una singola transazione.
      */
-    private void aperturaConto() {
+    private void openAccount() {
         System.out.println("\n=== APERTURA NUOVO CONTO ===");
-        System.out.print("Codice cliente: ");
-        wsConCliente = scanner.nextLine().trim();
+        try {
+            System.out.print("Codice cliente: ");
+            wsConCliente = scanner.nextLine();
 
-        String sqlVerificaCliente = "SELECT codice_cliente, nome, cognome FROM CLIENTI WHERE codice_cliente = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sqlVerificaCliente)) {
-            stmt.setString(1, wsConCliente);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                sqlcode = 0;
-                wsCliCodice = rs.getString("codice_cliente");
-                wsCliNome = rs.getString("nome");
-                wsCliCognome = rs.getString("cognome");
-                System.out.println("Cliente: " + wsCliNome + " " + wsCliCognome);
-            } else {
-                sqlcode = 100;
-                System.out.println("Cliente non trovato!");
+            // Verifica esistenza cliente
+            String sqlVerifyClient = "SELECT codice_cliente, nome, cognome FROM CLIENTI WHERE codice_cliente = ?";
+            try (PreparedStatement ps = connection.prepareStatement(sqlVerifyClient)) {
+                ps.setString(1, wsConCliente);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        sqlcode = 0;
+                        wsCliCodice = rs.getString("codice_cliente");
+                        wsCliNome = rs.getString("nome");
+                        wsCliCognome = rs.getString("cognome");
+                        System.out.println("Cliente: " + wsCliNome + " " + wsCliCognome);
+                    } else {
+                        sqlcode = 100;
+                        System.out.println("Cliente non trovato!");
+                        return; // Esce dalla procedura
+                    }
+                }
+            }
+
+            // Genera nuovo numero conto
+            generateAccountNumber();
+            if (sqlcode != 0) {
+                System.out.println("Impossibile generare un nuovo numero di conto.");
                 return;
             }
-        } catch (SQLException e) {
-            handleSqlException(e);
-            System.err.println("Errore database: " + sqlcode);
-            return;
-        }
+            wsConNumero = this.wsConNumero; // Assegna il numero generato
 
-        if (!generaNumeroConto()) return;
+            System.out.print("Tipo conto (C=Corrente, D=Deposito): ");
+            wsConTipo = scanner.nextLine().toUpperCase();
+            System.out.print("Importo iniziale: ");
+            wsConSaldo = new BigDecimal(scanner.nextLine()).setScale(2, RoundingMode.HALF_UP);
+            System.out.print("Fido accordato: ");
+            wsConFido = new BigDecimal(scanner.nextLine()).setScale(2, RoundingMode.HALF_UP);
+            wsConStato = "A";
 
-        System.out.print("Tipo conto (C=Corrente, D=Deposito): ");
-        wsConTipo = scanner.nextLine().trim().toUpperCase();
-        System.out.print("Importo iniziale: ");
-        wsConSaldo = new BigDecimal(scanner.nextLine().replace(',', '.'));
-        System.out.print("Fido accordato: ");
-        wsConFido = new BigDecimal(scanner.nextLine().replace(',', '.'));
-        wsConStato = "A";
-
-        String sqlInsertConto = "INSERT INTO CONTI (numero_conto, codice_cliente, tipo_conto, saldo, data_apertura, stato, fido) VALUES (?, ?, ?, ?, CURRENT_DATE, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sqlInsertConto)) {
-            stmt.setString(1, wsConNumero);
-            stmt.setString(2, wsConCliente);
-            stmt.setString(3, wsConTipo);
-            stmt.setBigDecimal(4, wsConSaldo);
-            stmt.setString(5, wsConStato);
-            stmt.setBigDecimal(6, wsConFido);
-
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected > 0) {
-                sqlcode = 0;
-                System.out.println("Conto " + wsConNumero + " creato con successo!");
-
-                if (wsConSaldo.compareTo(BigDecimal.ZERO) > 0) {
-                    wsTipoMovimento = "D";
-                    wsCausale = "Deposito iniziale";
-                    wsImporto = wsConSaldo;
-                    wsNumeroConto = wsConNumero;
-                    try {
-                        registraMovimento();
-                    } catch (SQLException ex) {
-                        throw new SQLException("Errore durante la registrazione del movimento iniziale", ex);
-                    } // Questo metodo non gestisce commit/rollback
-                }
-                connection.commit();
-            } else {
-                sqlcode = -1; // Errore generico
-                System.err.println("Errore creazione conto: Nessuna riga inserita.");
-                connection.rollback();
+            // Inserisci nuovo conto
+            String sqlInsertAccount = "INSERT INTO CONTI (numero_conto, codice_cliente, tipo_conto, saldo, data_apertura, stato, fido) VALUES (?, ?, ?, ?, CURRENT_DATE, ?, ?)";
+            try (PreparedStatement ps = connection.prepareStatement(sqlInsertAccount)) {
+                ps.setString(1, wsConNumero);
+                ps.setString(2, wsConCliente);
+                ps.setString(3, wsConTipo);
+                ps.setBigDecimal(4, wsConSaldo);
+                ps.setString(5, wsConStato);
+                ps.setBigDecimal(6, wsConFido);
+                ps.executeUpdate();
             }
+
+            System.out.println("Conto " + wsConNumero + " creato con successo!");
+
+            // Registra movimento iniziale se c'è un saldo
+            if (wsConSaldo.compareTo(BigDecimal.ZERO) > 0) {
+                this.wsNumeroConto = wsConNumero;
+                this.wsImporto = wsConSaldo;
+                this.wsTipoMovimento = "D";
+                this.wsCausale = "Deposito iniziale";
+                recordTransaction();
+            }
+
+            connection.commit(); // Conferma la transazione
+
         } catch (SQLException e) {
+            System.err.println("Errore creazione conto: " + e.getMessage());
             handleSqlException(e);
-            System.err.println("Errore creazione conto: " + sqlcode);
-            try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            rollbackTransaction();
+        } catch (NumberFormatException e) {
+            System.err.println("Input numerico non valido.");
+            rollbackTransaction();
         }
     }
 
     /**
      * Genera un nuovo numero di conto sequenziale.
-     * Corrisponde al paragrafo GENERA-NUMERO-CONTO.
-     * @return true se la generazione ha successo, false altrimenti.
+     * Equivalente al paragrafo GENERA-NUMERO-CONTO.
      */
-    private boolean generaNumeroConto() {
+    private void generateAccountNumber() {
         String sql = "SELECT 'IT' || LPAD(CAST(COALESCE(MAX(CAST(SUBSTR(numero_conto, 3) AS INTEGER)), 0) + 1 AS VARCHAR), 10, '0') FROM CONTI WHERE numero_conto LIKE 'IT%'";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
+                this.wsConNumero = rs.getString(1);
                 sqlcode = 0;
-                wsConNumero = rs.getString(1);
-                return true;
             } else {
-                sqlcode = 100; // Non dovrebbe mai accadere con questa query
-                return false;
+                // Caso improbabile, ma gestito per sicurezza
+                sqlcode = 100;
+                this.wsConNumero = "IT0000000001";
             }
         } catch (SQLException e) {
+            System.err.println("Errore durante la generazione del numero conto.");
             handleSqlException(e);
-            System.err.println("Errore durante la generazione del numero conto: " + sqlcode);
-            return false;
         }
     }
 
     /**
-     * Gestisce un'operazione di deposito su un conto.
-     * Corrisponde al paragrafo DEPOSITO.
+     * Gestisce un'operazione di deposito.
      */
-    private void deposito() {
+    private void makeDeposit() {
         System.out.println("\n=== DEPOSITO ===");
-        System.out.print("Numero conto: ");
-        wsNumeroConto = scanner.nextLine().trim();
-
-        if (!verificaConto()) return;
-
-        System.out.print("Importo deposito: ");
         try {
-            wsImporto = new BigDecimal(scanner.nextLine().replace(',', '.'));
+            System.out.print("Numero conto: ");
+            wsNumeroConto = scanner.nextLine();
+
+            if (!verifyAccount()) return;
+
+            System.out.print("Importo deposito: ");
+            wsImporto = new BigDecimal(scanner.nextLine()).setScale(2, RoundingMode.HALF_UP);
+
             if (wsImporto.compareTo(BigDecimal.ZERO) <= 0) {
                 System.out.println("Importo non valido!");
                 return;
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Importo non valido!");
-            return;
-        }
 
-        System.out.print("Causale: ");
-        wsCausale = scanner.nextLine().trim();
+            System.out.print("Causale: ");
+            wsCausale = scanner.nextLine();
 
-        String sqlUpdate = "UPDATE CONTI SET saldo = saldo + ? WHERE numero_conto = ? AND stato = 'A'";
-        try (PreparedStatement stmt = connection.prepareStatement(sqlUpdate)) {
-            stmt.setBigDecimal(1, wsImporto);
-            stmt.setString(2, wsNumeroConto);
-            int rowsAffected = stmt.executeUpdate();
-
-            if (rowsAffected > 0) {
-                sqlcode = 0;
-                wsTipoMovimento = "D";
-                try {
-                    registraMovimento();
-                } catch (SQLException ex) {
-                    throw new SQLException("Errore durante la registrazione del movimento iniziale", ex);
+            // Aggiorna saldo
+            String sqlUpdate = "UPDATE CONTI SET saldo = saldo + ? WHERE numero_conto = ? AND stato = 'A'";
+            try (PreparedStatement ps = connection.prepareStatement(sqlUpdate)) {
+                ps.setBigDecimal(1, wsImporto);
+                ps.setString(2, wsNumeroConto);
+                int rowsAffected = ps.executeUpdate();
+                if (rowsAffected > 0) {
+                    sqlcode = 0;
+                    wsTipoMovimento = "D";
+                    recordTransaction();
+                    connection.commit();
+                    System.out.println("Deposito effettuato con successo!");
+                } else {
+                    sqlcode = 100;
+                    System.out.println("Errore durante il deposito: conto non trovato o non attivo.");
+                    rollbackTransaction();
                 }
-                connection.commit();
-                System.out.println("Deposito effettuato con successo!");
-            } else {
-                sqlcode = 100;
-                System.err.println("Errore durante il deposito: conto non trovato o non attivo.");
-                connection.rollback();
             }
         } catch (SQLException e) {
+            System.err.println("Errore durante il deposito: " + e.getMessage());
             handleSqlException(e);
-            System.err.println("Errore durante il deposito: " + sqlcode);
-            try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            rollbackTransaction();
+        } catch (NumberFormatException e) {
+            System.err.println("Input numerico non valido.");
+            rollbackTransaction();
         }
     }
 
     /**
-     * Gestisce un'operazione di prelievo da un conto.
-     * Corrisponde al paragrafo PRELIEVO.
+     * Gestisce un'operazione di prelievo.
      */
-    private void prelievo() {
+    private void makeWithdrawal() {
         System.out.println("\n=== PRELIEVO ===");
-        System.out.print("Numero conto: ");
-        wsNumeroConto = scanner.nextLine().trim();
-
-        if (!verificaConto()) return;
-
-        System.out.print("Importo prelievo: ");
         try {
-            wsImporto = new BigDecimal(scanner.nextLine().replace(',', '.'));
+            System.out.print("Numero conto: ");
+            wsNumeroConto = scanner.nextLine();
+
+            if (!verifyAccount()) return;
+
+            System.out.print("Importo prelievo: ");
+            wsImporto = new BigDecimal(scanner.nextLine()).setScale(2, RoundingMode.HALF_UP);
+
             if (wsImporto.compareTo(BigDecimal.ZERO) <= 0) {
                 System.out.println("Importo non valido!");
                 return;
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Importo non valido!");
-            return;
-        }
 
-        // Verifica disponibilità (il saldo è già stato caricato da verificaConto)
-        // wsConSaldo è il saldo attuale, wsConFido è il fido
-        BigDecimal disponibilita = wsConSaldo.add(wsConFido);
-        if (wsImporto.compareTo(disponibilita) > 0) {
-            System.out.println("Fondi insufficienti!");
-            System.out.println("Saldo attuale: EUR " + formatCurrency(wsConSaldo));
-            System.out.println("Disponibile (con fido): EUR " + formatCurrency(disponibilita));
-            return;
-        }
-
-        System.out.print("Causale: ");
-        wsCausale = scanner.nextLine().trim();
-
-        String sqlUpdate = "UPDATE CONTI SET saldo = saldo - ? WHERE numero_conto = ? AND stato = 'A'";
-        try (PreparedStatement stmt = connection.prepareStatement(sqlUpdate)) {
-            stmt.setBigDecimal(1, wsImporto);
-            stmt.setString(2, wsNumeroConto);
-            int rowsAffected = stmt.executeUpdate();
-
-            if (rowsAffected > 0) {
-                sqlcode = 0;
-                wsTipoMovimento = "P";
-                try {
-                    registraMovimento();
-                } catch (SQLException ex) {
-                    throw new SQLException("Errore durante la registrazione del movimento iniziale", ex);
+            // Verifica disponibilità
+            BigDecimal saldoCorrente;
+            BigDecimal fido;
+            String sqlCheck = "SELECT saldo, fido FROM CONTI WHERE numero_conto = ? AND stato = 'A'";
+            try (PreparedStatement ps = connection.prepareStatement(sqlCheck)) {
+                ps.setString(1, wsNumeroConto);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        saldoCorrente = rs.getBigDecimal("saldo");
+                        fido = rs.getBigDecimal("fido");
+                    } else {
+                        System.out.println("Conto non trovato o non attivo.");
+                        return;
+                    }
                 }
-                connection.commit();
-                System.out.println("Prelievo effettuato con successo!");
-            } else {
-                sqlcode = 100;
-                System.err.println("Errore durante il prelievo: conto non trovato o non attivo.");
-                connection.rollback();
+            }
+
+            if (saldoCorrente.subtract(wsImporto).compareTo(fido.negate()) < 0) {
+                System.out.println("Fondi insufficienti!");
+                System.out.println("Saldo attuale: " + currencyFormatter.format(saldoCorrente));
+                System.out.println("Fido disponibile: " + currencyFormatter.format(fido));
+                return;
+            }
+
+            System.out.print("Causale: ");
+            wsCausale = scanner.nextLine();
+
+            // Aggiorna saldo
+            String sqlUpdate = "UPDATE CONTI SET saldo = saldo - ? WHERE numero_conto = ? AND stato = 'A'";
+            try (PreparedStatement ps = connection.prepareStatement(sqlUpdate)) {
+                ps.setBigDecimal(1, wsImporto);
+                ps.setString(2, wsNumeroConto);
+                int rowsAffected = ps.executeUpdate();
+                if (rowsAffected > 0) {
+                    sqlcode = 0;
+                    wsTipoMovimento = "P";
+                    recordTransaction();
+                    connection.commit();
+                    System.out.println("Prelievo effettuato con successo!");
+                } else {
+                    sqlcode = 100;
+                    System.out.println("Errore durante il prelievo.");
+                    rollbackTransaction();
+                }
             }
         } catch (SQLException e) {
+            System.err.println("Errore durante il prelievo: " + e.getMessage());
             handleSqlException(e);
-            System.err.println("Errore durante il prelievo: " + sqlcode);
-            try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            rollbackTransaction();
+        } catch (NumberFormatException e) {
+            System.err.println("Input numerico non valido.");
+            rollbackTransaction();
         }
     }
 
     /**
-     * Visualizza il saldo e le informazioni principali di un conto.
-     * Corrisponde al paragrafo VISUALIZZA-SALDO.
+     * Visualizza il saldo e le informazioni principali del conto.
      */
-    private void visualizzaSaldo() {
+    private void viewBalance() {
         System.out.println("\n=== VISUALIZZA SALDO ===");
         System.out.print("Numero conto: ");
-        wsNumeroConto = scanner.nextLine().trim();
+        wsNumeroConto = scanner.nextLine();
 
         String sql = "SELECT c.saldo, c.fido, cl.nome, cl.cognome FROM CONTI c JOIN CLIENTI cl ON c.codice_cliente = cl.codice_cliente WHERE c.numero_conto = ? AND c.stato = 'A'";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, wsNumeroConto);
-            ResultSet rs = stmt.executeQuery();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, wsNumeroConto);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    sqlcode = 0;
+                    wsConSaldo = rs.getBigDecimal("saldo");
+                    wsConFido = rs.getBigDecimal("fido");
+                    wsCliNome = rs.getString("nome");
+                    wsCliCognome = rs.getString("cognome");
 
-            if (rs.next()) {
-                sqlcode = 0;
-                wsConSaldo = rs.getBigDecimal("saldo");
-                wsConFido = rs.getBigDecimal("fido");
-                wsCliNome = rs.getString("nome");
-                wsCliCognome = rs.getString("cognome");
-
-                System.out.println();
-                System.out.println("Intestatario: " + wsCliNome + " " + wsCliCognome);
-                System.out.println("Saldo attuale: EUR " + formatCurrency(wsConSaldo));
-                System.out.println("Fido accordato: EUR " + formatCurrency(wsConFido));
-                BigDecimal disponibile = wsConSaldo.add(wsConFido);
-                System.out.println("Disponibile: EUR " + formatCurrency(disponibile));
-            } else {
-                sqlcode = 100;
-                System.out.println("Conto non trovato o non attivo!");
+                    System.out.println("\nIntestatario: " + wsCliNome + " " + wsCliCognome);
+                    System.out.println("Saldo attuale: EUR " + currencyFormatter.format(wsConSaldo));
+                    System.out.println("Fido accordato: EUR " + currencyFormatter.format(wsConFido));
+                    BigDecimal disponibile = wsConSaldo.add(wsConFido);
+                    System.out.println("Disponibile: EUR " + currencyFormatter.format(disponibile));
+                } else {
+                    sqlcode = 100;
+                    System.out.println("Conto non trovato o non attivo!");
+                }
             }
-            connection.commit(); // Commit per terminare la transazione di lettura
         } catch (SQLException e) {
+            System.err.println("Errore database: " + e.getMessage());
             handleSqlException(e);
-            System.err.println("Errore database: " + sqlcode);
         }
     }
 
     /**
      * Genera un file di testo con l'estratto conto.
-     * Corrisponde al paragrafo ESTRATTO-CONTO.
      */
-    private void estrattoConto() {
+    private void generateAccountStatement() {
         System.out.println("\n=== ESTRATTO CONTO ===");
         System.out.print("Numero conto: ");
-        wsNumeroConto = scanner.nextLine().trim();
+        wsNumeroConto = scanner.nextLine();
 
-        if (!verificaConto()) return;
+        if (!verifyAccount()) return;
 
         String fileName = "ESTRATTO-CONTO.TXT";
         try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
@@ -493,49 +478,43 @@ public class GestioneConti {
             writer.println("Conto: " + wsNumeroConto + "    Cliente: " + wsCliNome + " " + wsCliCognome);
             writer.println("Data: " + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE) + "    Ora: " + java.time.LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
             writer.println("-".repeat(132));
-            writer.println(String.format("%-20s %-5s %15s   %-50s %15s", "DATA/ORA", "TIPO", "IMPORTO", "CAUSALE", "SALDO DOPO"));
+            writer.println(String.format("%-20s %-5s %15s   %-30s %15s", "DATA/ORA", "TIPO", "IMPORTO", "CAUSALE", "SALDO DOPO"));
             writer.println("-".repeat(132));
 
             // Cursore movimenti
             String sqlCursor = "SELECT data_movimento, tipo_movimento, importo, causale, saldo_dopo FROM MOVIMENTI WHERE numero_conto = ? ORDER BY data_movimento DESC";
-            try (PreparedStatement stmt = connection.prepareStatement(sqlCursor)) {
-                stmt.setString(1, wsNumeroConto);
-                ResultSet rs = stmt.executeQuery();
-
-                while (rs.next()) {
-                    sqlcode = 0;
-                    wsMovData = rs.getTimestamp("data_movimento");
-                    wsMovTipo = rs.getString("tipo_movimento");
-                    wsMovImporto = rs.getBigDecimal("importo");
-                    wsMovCausale = rs.getString("causale");
-                    wsMovSaldoDopo = rs.getBigDecimal("saldo_dopo");
-                    scriviMovimentoReport(writer);
+            try (PreparedStatement ps = connection.prepareStatement(sqlCursor)) {
+                ps.setString(1, wsNumeroConto);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        wsMovData = rs.getTimestamp("data_movimento");
+                        wsMovTipo = rs.getString("tipo_movimento");
+                        wsMovImporto = rs.getBigDecimal("importo");
+                        wsMovCausale = rs.getString("causale");
+                        wsMovSaldoDopo = rs.getBigDecimal("saldo_dopo");
+                        writeMovementToReport(writer);
+                    }
                 }
-
-                connection.commit(); // Termina transazione di lettura
-
-            } catch (SQLException e) {
-                handleSqlException(e);
-                System.err.println("Errore nel recuperare i movimenti: " + sqlcode);
             }
 
             writer.println("-".repeat(132));
-            // Saldo finale (già caricato da verificaConto)
-            writer.println(String.format("%-100s SALDO FINALE: EUR %15s", "", formatCurrency(wsConSaldo)));
-            
+            writer.println("SALDO FINALE: EUR " + currencyFormatter.format(this.wsConSaldo)); // Usa il saldo verificato
+
             System.out.println("Estratto conto salvato in " + fileName);
 
         } catch (IOException e) {
             System.err.println("Errore durante la scrittura del file di report: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Errore database durante la generazione dell'estratto conto: " + e.getMessage());
+            handleSqlException(e);
         }
     }
 
     /**
      * Scrive una singola riga di movimento nel file di report.
-     * Corrisponde al paragrafo SCRIVI-MOVIMENTO-REPORT.
      * @param writer L'oggetto PrintWriter per scrivere sul file.
      */
-    private void scriviMovimentoReport(PrintWriter writer) {
+    private void writeMovementToReport(PrintWriter writer) {
         String tipoDesc;
         switch (wsMovTipo) {
             case "D": tipoDesc = "DEP"; break;
@@ -545,146 +524,161 @@ public class GestioneConti {
         }
 
         String dataFormatted = wsMovData.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        String causaleTrunc = wsMovCausale.length() > 50 ? wsMovCausale.substring(0, 50) : wsMovCausale;
+        String importoFormatted = currencyFormatter.format(wsMovImporto);
+        String saldoDopoFormatted = currencyFormatter.format(wsMovSaldoDopo);
+        String causaleTrunc = wsMovCausale.length() > 30 ? wsMovCausale.substring(0, 30) : wsMovCausale;
 
-        String line = String.format("%-20s %-5s %15s   %-50s %15s",
+        writer.println(String.format("%-20s %-5s %15s   %-30s %15s",
                 dataFormatted,
                 tipoDesc,
-                formatCurrency(wsMovImporto),
+                importoFormatted,
                 causaleTrunc,
-                formatCurrency(wsMovSaldoDopo));
-        writer.println(line);
+                saldoDopoFormatted));
     }
 
     /**
      * Gestisce la chiusura di un conto.
-     * Corrisponde al paragrafo CHIUSURA-CONTO.
      */
-    private void chiusuraConto() {
+    private void closeAccount() {
         System.out.println("\n=== CHIUSURA CONTO ===");
-        System.out.print("Numero conto da chiudere: ");
-        wsNumeroConto = scanner.nextLine().trim();
+        try {
+            System.out.print("Numero conto da chiudere: ");
+            wsNumeroConto = scanner.nextLine();
 
-        if (!verificaConto()) return;
+            if (!verifyAccount()) return;
 
-        if (wsConSaldo.compareTo(BigDecimal.ZERO) != 0) {
-            System.out.println("Impossibile chiudere: saldo non a zero!");
-            System.out.println("Saldo attuale: EUR " + formatCurrency(wsConSaldo));
-            return;
-        }
-
-        System.out.print("Confermare chiusura conto (S/N): ");
-        String conferma = scanner.nextLine();
-
-        if (conferma.equalsIgnoreCase("S")) {
-            String sqlUpdate = "UPDATE CONTI SET stato = 'C', data_chiusura = CURRENT_DATE WHERE numero_conto = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(sqlUpdate)) {
-                stmt.setString(1, wsNumeroConto);
-                int rowsAffected = stmt.executeUpdate();
-                if (rowsAffected > 0) {
-                    sqlcode = 0;
-                    connection.commit();
-                    System.out.println("Conto chiuso con successo!");
-                } else {
-                    sqlcode = 100;
-                    connection.rollback();
-                    System.err.println("Errore chiusura conto: nessuna riga aggiornata.");
-                }
-            } catch (SQLException e) {
-                handleSqlException(e);
-                System.err.println("Errore chiusura conto: " + sqlcode);
-                try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            if (wsConSaldo.compareTo(BigDecimal.ZERO) != 0) {
+                System.out.println("Impossibile chiudere: saldo non a zero!");
+                System.out.println("Saldo attuale: EUR " + currencyFormatter.format(wsConSaldo));
+                return;
             }
-        } else {
-            System.out.println("Chiusura annullata.");
+
+            System.out.print("Confermare chiusura conto (S/N): ");
+            String conferma = scanner.nextLine();
+
+            if (conferma.equalsIgnoreCase("S")) {
+                String sqlUpdate = "UPDATE CONTI SET stato = 'C', data_chiusura = CURRENT_DATE WHERE numero_conto = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sqlUpdate)) {
+                    ps.setString(1, wsNumeroConto);
+                    int rowsAffected = ps.executeUpdate();
+                    if (rowsAffected > 0) {
+                        sqlcode = 0;
+                        connection.commit();
+                        System.out.println("Conto chiuso con successo!");
+                    } else {
+                        sqlcode = 100;
+                        System.out.println("Errore chiusura conto.");
+                        rollbackTransaction();
+                    }
+                }
+            } else {
+                System.out.println("Chiusura annullata.");
+            }
+        } catch (SQLException e) {
+            System.err.println("Errore chiusura conto: " + e.getMessage());
+            handleSqlException(e);
+            rollbackTransaction();
         }
     }
 
     /**
-     * Verifica l'esistenza e lo stato di un conto, caricandone i dati.
-     * Corrisponde al paragrafo VERIFICA-CONTO.
-     * @return true se il conto è valido e attivo, false altrimenti.
+     * Verifica l'esistenza e lo stato di un conto.
+     * Imposta le variabili di classe relative al conto se trovato.
+     *
+     * @return true se il conto è valido e attivo, altrimenti false.
      */
-    private boolean verificaConto() {
-        String sql = "SELECT c.saldo, c.stato, c.fido, cl.nome, cl.cognome FROM CONTI c JOIN CLIENTI cl ON c.codice_cliente = cl.codice_cliente WHERE c.numero_conto = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, wsNumeroConto);
-            ResultSet rs = stmt.executeQuery();
+    private boolean verifyAccount() {
+        wsEsito = "OK";
+        String sql = "SELECT c.saldo, c.stato, cl.nome, cl.cognome FROM CONTI c JOIN CLIENTI cl ON c.codice_cliente = cl.codice_cliente WHERE c.numero_conto = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, this.wsNumeroConto);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    sqlcode = 0;
+                    this.wsConSaldo = rs.getBigDecimal("saldo");
+                    this.wsConStato = rs.getString("stato");
+                    this.wsCliNome = rs.getString("nome");
+                    this.wsCliCognome = rs.getString("cognome");
 
-            if (rs.next()) {
-                sqlcode = 0;
-                wsConSaldo = rs.getBigDecimal("saldo");
-                wsConStato = rs.getString("stato");
-                wsConFido = rs.getBigDecimal("fido");
-                wsCliNome = rs.getString("nome");
-                wsCliCognome = rs.getString("cognome");
-
-                if (!"A".equals(wsConStato)) {
-                    System.out.println("Conto non attivo! (Stato: " + wsConStato + ")");
-                    return false;
+                    if (!"A".equals(this.wsConStato)) {
+                        System.out.println("Conto non attivo!");
+                        wsEsito = "KO";
+                    }
+                } else {
+                    sqlcode = 100;
+                    System.out.println("Conto non trovato!");
+                    wsEsito = "KO";
                 }
-                return true;
-            } else {
-                sqlcode = 100;
-                System.out.println("Conto non trovato!");
-                return false;
             }
         } catch (SQLException e) {
+            System.err.println("Errore database: " + e.getMessage());
             handleSqlException(e);
-            System.err.println("Errore database: " + sqlcode);
-            return false;
+            wsEsito = "KO";
         }
+        return "OK".equals(wsEsito);
     }
 
     /**
      * Registra un movimento nella tabella MOVIMENTI.
-     * Corrisponde al paragrafo REGISTRA-MOVIMENTO.
-     * ATTENZIONE: Questo metodo non gestisce commit/rollback, deve essere
-     * chiamato all'interno di una transazione già esistente.
+     * Questa operazione fa parte di una transazione più grande (deposito, prelievo, etc.).
+     * Non gestisce commit o rollback.
      */
-    private void registraMovimento() throws SQLException {
-        // Recupera il saldo aggiornato per registrarlo nel movimento
+    private void recordTransaction() {
         String sqlSelectSaldo = "SELECT saldo FROM CONTI WHERE numero_conto = ?";
-        try (PreparedStatement stmtSaldo = connection.prepareStatement(sqlSelectSaldo)) {
-            stmtSaldo.setString(1, wsNumeroConto);
-            ResultSet rs = stmtSaldo.executeQuery();
-            if (rs.next()) {
-                wsSaldo = rs.getBigDecimal("saldo");
-            } else {
-                throw new SQLException("Impossibile recuperare il saldo aggiornato per il conto " + wsNumeroConto);
+        String sqlInsertMov = "INSERT INTO MOVIMENTI (numero_conto, tipo_movimento, importo, causale, saldo_dopo, eseguito_da) VALUES (?, ?, ?, ?, ?, 'SISTEMA')";
+
+        try (PreparedStatement psSelect = connection.prepareStatement(sqlSelectSaldo)) {
+            psSelect.setString(1, this.wsNumeroConto);
+            try (ResultSet rs = psSelect.executeQuery()) {
+                if (rs.next()) {
+                    this.wsSaldo = rs.getBigDecimal("saldo");
+                } else {
+                    // Se non trova il saldo, c'è un problema grave nella transazione
+                    throw new SQLException("Impossibile recuperare il saldo aggiornato per il conto " + this.wsNumeroConto);
+                }
             }
+        } catch (SQLException e) {
+            // Rilancia l'eccezione per far fallire la transazione principale
+            throw new RuntimeException("Fallimento nel recupero del saldo per la registrazione del movimento.", e);
         }
 
-        String sqlInsert = "INSERT INTO MOVIMENTI (numero_conto, tipo_movimento, importo, causale, saldo_dopo, eseguito_da) VALUES (?, ?, ?, ?, ?, 'SISTEMA')";
-        try (PreparedStatement stmt = connection.prepareStatement(sqlInsert)) {
-            stmt.setString(1, wsNumeroConto);
-            stmt.setString(2, wsTipoMovimento);
-            stmt.setBigDecimal(3, wsImporto);
-            stmt.setString(4, wsCausale);
-            stmt.setBigDecimal(5, wsSaldo);
-            stmt.executeUpdate();
+        try (PreparedStatement psInsert = connection.prepareStatement(sqlInsertMov)) {
+            psInsert.setString(1, this.wsNumeroConto);
+            psInsert.setString(2, this.wsTipoMovimento);
+            psInsert.setBigDecimal(3, this.wsImporto);
+            psInsert.setString(4, this.wsCausale);
+            psInsert.setBigDecimal(5, this.wsSaldo);
+            psInsert.executeUpdate();
+        } catch (SQLException e) {
+            // Rilancia l'eccezione per far fallire la transazione principale
+            throw new RuntimeException("Fallimento nella registrazione del movimento.", e);
         }
     }
 
     /**
-     * Gestisce le eccezioni SQL, simulando il comportamento di SQLCODE.
+     * Annulla la transazione corrente.
+     */
+    private void rollbackTransaction() {
+        try {
+            if (connection != null) {
+                connection.rollback();
+                System.out.println("Transazione annullata a causa di un errore.");
+            }
+        } catch (SQLException ex) {
+            System.err.println("Errore critico durante il rollback della transazione: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Simula il comportamento di SQLCODE basato su SQLException.
      * @param e L'eccezione SQL catturata.
      */
     private void handleSqlException(SQLException e) {
-        // "02000" è lo SQLSTATE standard per "no data found"
+        // "02000" è lo SQLState standard per "no data found"
         if ("02000".equals(e.getSQLState())) {
             this.sqlcode = 100;
         } else {
-            this.sqlcode = e.getErrorCode() != 0 ? -e.getErrorCode() : -1;
+            this.sqlcode = e.getErrorCode(); // Codice di errore specifico del driver
         }
-    }
-
-    /**
-     * Formatta un valore BigDecimal come stringa di valuta.
-     * @param amount L'importo da formattare.
-     * @return La stringa formattata.
-     */
-    private String formatCurrency(BigDecimal amount) {
-        return currencyFormatter.format(amount.setScale(2, RoundingMode.HALF_UP));
     }
 }

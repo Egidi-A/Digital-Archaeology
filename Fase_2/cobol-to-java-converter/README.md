@@ -1,171 +1,71 @@
-# Note per la Conversione COBOL -> Java
+# Traduttore Diretto da COBOL a Java con Supporto JDBC
 
-### What do i need to remember
-- Prerequisiti: Java, Maven e git installati.
-- Serve il ProLeap COBOL Parser, che è un progetto Maven.
-- Il file `.cbl` da convertire va messo in `src/main/resources/cobol/`.
-- Tutti i file generati finiranno nella cartella `output/`.
+Questo progetto modernizza applicativi COBOL legacy traducendoli direttamente in codice Java moderno e compilabile, con un focus sull'integrazione di operazioni di database tramite JDBC. Il processo utilizza un singolo script Python che sfrutta l'API di Google Gemini per un'analisi e una traduzione end-to-end.
 
-### Funzionalità
+## Funzionalità Chiave
 
-- **Parsing COBOL**: Analizza file COBOL e genera AST/ASG (Abstract Syntax Tree / Abstract Syntax Graph)
-- **Export `.xml`**: Esporta la struttura AST/ASG in formato `.xml`
-- **Visitor Pattern**: Attraversa l'AST per analisi personalizzate
-- **Trasformazione `.xml`**: Converte ASG COBOL in ASG Java
-- **Supporto formati**: FIXED, VARIABLE, TANDEM
+- **Traduzione Diretta**: Converte un file sorgente COBOL in un singolo file `.java` senza passaggi intermedi.
+- **Integrazione Database**: Analizza sia il codice COBOL che uno schema SQL fornito per generare query JDBC appropriate.
+- **Modernizzazione**: Produce codice Java leggibile, orientato agli oggetti e che utilizza pratiche moderne per la gestione delle eccezioni e delle risorse.
 
+## Prerequisiti
 
-### Clonazione e install ProLeap COBOL Parser
+1.  **Python 3.x**: Con la libreria `google-generativeai` installata.
+    ```bash
+    pip install google-generativeai
+    ```
+2.  **Database PostgreSQL**: Installato, in esecuzione e accessibile.
+3.  **Driver JDBC PostgreSQL**: Necessario per compilare ed eseguire il codice Java generato.
+4.  **Java (JDK)**: Necessario per compilare il file `.java` di output.
+5.  **API Key di Google Gemini**: Configurare la propria API key all'interno dello script `traduttoreDirettoWithSQL_generator.py`.
 
-```bash
-cd ~/temp
-git clone https://github.com/uwol/proleap-cobol-parser.git
-cd proleap-cobol-parser
-mvn clean install
-```
+## Flusso di Lavoro
 
-## Passo 1: Generare l'`.xml` dall'AST del COBOL
-Questo è il primo step: legge il file `.cbl` e lo trasforma in un file `.xml` che rappresenta il suo AST/ASG (Abstract Syntax Tree/Graph).
+### Passo 1: Configurazione del Database (Esempio)
 
-
-Cosa fa:
-1. Esegue la classe `CobolToJavaConverter.java`;
-2. Questa, a sua volta, usa `ASTToXMLExporter.java` per scrivere il file.
-
-- Input: `src/main/resources/cobol/File_COBOL.cbl`.
-- Output: `output/ASG_COBOL.xml`.
-
-Il file `.xml` generato contiene la rappresentazione dell'ASG del codice COBOL, con dettagli su:
-- Struttura delle divisioni COBOL
-- Variabili e tipi di dato
-- Paragrafi e statement
-
-### Per eseguirlo
-Da terminale dentro a `cobol-to-java-converter`, lanciare comando Maven:
-```bash
-# Compila il progetto ed esegue il main di CobolToJavaConverter:
-mvn compile exec:java -Dexec.mainClass="com.example.CobolToJavaConverter"
-# Oppure prova:
-mvn exec:java -Dexec.mainClass="com.example.CobolToJavaConverter"
-```
-Per personalizzare input e output:
-```java
-// Cambia il file COBOL di input
-File cobolFile = new File("src/main/resources/cobol/employee.cbl");
-
-// Cambia il percorso di output `.xml`
-ASTToXMLExporter.exportToXML(program, "output/employee-ast.xml");
-```
-
-## Passo 2: Trasformare l'`.xml` COBOL in `.xml` Java
-Ora che ho l'AST/ASG del COBOL in formato `.xml`, lo trasformo in un altro `.xml` che rappresenta la struttura di una classe Java (un Abstract Syntax Graph, o ASG).
-
-Cosa fa: 
-1. Esegue la classe CobolToJavaXMLTransformer.
-
-- Input: `output/ASG_COBOL.xml`.
-- Output: `output/ASG_Java.xml`.
-
-Mappatura `.xml`:
-- program-unit → class
-- data-entry → field + getter/setter  
-- paragraph → method
-- statement → Java statement equivalente
-
-### Per eseguirlo
-Da terminale dentro a `cobol-to-java-converter`, lanciare comando Maven:
-```bash
-# Compila il progetto ed esegue il main di CobolToJavaXMLTransformer:
-mvn compile exec:java -Dexec.mainClass="com.example.CobolToJavaXMLTransformer"
-# Oppure prova:
-mvn exec:java -Dexec.mainClass="com.example.CobolToJavaXMLTransformer"
-```
-A questo punto, ho ASG_Java.xml, che contiene la struttura della classe, dei campi, dei getter/setter e dei metodi che deriverebbero dal COBOL.
-
-## Passo 3: Generare il Codice `.java`
-Lo scriptino python `gemini_java_generator.py` legge il file `output/ASG_Java.xml` e genera il codice sorgente in un file `.java` vero e proprio.
-
-Per farlo girare devo essere dentro allo spazio virtuale `venv` in cui ho installato `pip install google-generativeai`.
-Per entrare nello spazio virtuale, da terminale lanciato in `cobol-to-java-converter`, eseguire:
-```bash
-source venv/bin/activate
-```
-
-Cosa fa:
-1. Esegue il file `gemini_java_generator.py` che usa le API Gemini per generare il codice Java.
-
-- Input: `output/ASG_Java.xml`.
-- Output: `output/GeneratedClass.java`.
-
-### Per eseguirlo
-Da terminale dentro a `cobol-to-java-converter`, lanciare il comando:
-```bash
-python gemini_java_generator.py
-```
-
-# Note Extra
-## AST Visitor
-`ASTVisitorExample.java`: Questa è solo una classe di esempio. Non fa parte del flusso di conversione, ma serve per vedere come posso "visitare" l'AST del COBOL se volessi estrarre delle informazioni specifiche senza passare per l'`.xml`.
-### seguire il visitor example
-```bash
-# Compila il progetto ed esegue il main di ASTVisitorExample:
-mvn compile exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
-# Oppure prova:
-mvn exec:java -Dexec.mainClass="com.example.ASTVisitorExample"
-```
-
-## Estensioni Future
-
-- [ ] Generazione codice Java (sorgente) tramite chiamate API Gemini
-- [ ] Supporto COPY statements
-- [ ] Conversione tipi COBOL → Java?
-- [ ] Miglioramento visitor pattern per estrazione dati specifici
-- [ ]
-
-## Traduttore COBOL to Java con supporto JDBC
-
-### Prerequisiti
-- Python 3.x con libreria google-generativeai
-- PostgreSQL installato e configurato
-- Driver JDBC PostgreSQL
-
-## Uso del traduttore
-
-### 1. Esecuzione con parametri personalizzati:
-```bash
-python traduttoreDirettoWithSQL_generator.py --cobol File_COBOL.cbl --sql bank_schema.sql --output GestioneConti.java
-```
-### 2. Setup database PostgreSQL:
+Prima di eseguire la traduzione, assicurati che il database sia pronto.
 
 ```bash
-# Crea database
+# 1. Crea il database (es. 'banca')
 sudo -u postgres psql -c "CREATE DATABASE banca;"
 
-### 2. Carica schema
-sudo -u postgres psql -d banca -f bank_schema.sql
+# 2. Carica lo schema SQL nel database creato
+sudo -u postgres psql -d banca -f path/to/your/bank_schema.sql
 
-### 3. Imposta password utente
+# 3. Imposta una password per l'utente postgres (se necessario)
 sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'password';"
+
+# 4. Assicurati che pg_hba.conf permetta connessioni md5
+# Esempio di riga in /etc/postgresql/*/main/pg_hba.conf:
+# local   all   postgres   
+# md5
 ```
-### 3. Configurazione pg_hba.conf:
-Modifica `/etc/postgresql/*/main/pg_hba.conf`:
-
-```plaintext
-local   all   postgres   md5
-local   all   all        md5
-```
-
-Riavvia: `sudo systemctl restart postgresql`
-
-### 4. Compilazione ed esecuzione Java:
+### Passo 2: Esecuzione dello Script di Traduzione
+Esegui lo script Python specificando il file COBOL di input, il file dello schema SQL e il nome del file Java di output.
 
 ```bash
-# Download driver JDBC
-wget https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+python traduttoreDirettoWithSQL_generator.py \
+    --cobol "src/main/resources/cobol/File_COBOL.cbl" \
+    --sql "src/main/resources/sql/File_SQL.sql" \
+    --output "output/GestioneConti.java"
+```
+Lo script invierà il contenuto di entrambi i file sorgente all'API di Gemini e salverà il codice Java risultante nel percorso di output specificato.
 
-# Compila
-javac GestioneConti.java
+### Passo 3: Compilazione ed Esecuzione del Codice Java
+Una volta generato il file .java, puoi compilarlo ed eseguirlo.
 
-# Esegui
+```bash
+# 1. Scarica il driver JDBC di PostgreSQL, se non lo hai già
+wget [https://jdbc.postgresql.org/download/postgresql-42.7.3.jar](https://jdbc.postgresql.org/download/postgresql-42.7.3.jar)
+
+# 2. Compila il file Java generato
+# Assicurati di essere nella directory radice del progetto
+javac -cp .:postgresql-42.7.3.jar output/GestioneConti.java
+
+# 3. Esegui la classe Java compilata
+# NOTA: Il classpath (-cp) deve includere la directory corrente (.) e il JAR del driver
 java -cp .:postgresql-42.7.3.jar GestioneConti
 ```
+A questo punto, l'applicazione Java tradotta sarà in esecuzione e interagirà con il database PostgreSQL come definito nella logica del programma COBOL originale.
+
+Questa riorganizzazione rende il progetto molto più snello e focalizzato, sfruttando appieno le capacità dei moderni modelli linguistici per compiti complessi di traduzione e modernizzazione del codice.
