@@ -169,7 +169,3 @@ javac GestioneConti.java
 # Esegui
 java -cp .:postgresql-42.7.3.jar GestioneConti
 ```
-
-**Note**
-- Verifica le credenziali nel file Java generato (DB_URL, DB_USER, DB_PASSWORD)
-- Su Windows usa ; invece di : nel classpath
