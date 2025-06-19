@@ -8,8 +8,5 @@ python translator/traduttoreDirettoWithSQL_generator.py --cobol resources/cobol/
 
 javac GestioneConti.java
 java -cp .:postgresql-42.7.3.jar GestioneConti
-
-
 ```
-
-risolvere per il jar
+il postgresql-42.7.3.jar deve essere messo nella stessa cartella del file GestioneConti.java
