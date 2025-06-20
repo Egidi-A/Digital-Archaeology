@@ -63,6 +63,12 @@ def translate_cobol_to_java_with_jdbc(cobol_code, sql_schema=None):
 ```sql
 {sql_schema}
 ```
+**IMPORTANTE - Analizza attentamente lo schema SQL per:**
+- Identificare quali campi hanno vincoli NOT NULL e quali possono accettare NULL
+- Comprendere le relazioni di foreign key tra le tabelle
+- Notare i tipi di dati (CHAR, VARCHAR, etc.) e le loro dimensioni
+- Identificare le tabelle che hanno campi opzionali (che possono essere NULL)
+
 """
 
     prompt = f"""
@@ -90,6 +96,8 @@ Sei un compilatore avanzato e un traduttore di codice sorgente da COBOL a Java. 
      - `DB_PASSWORD = "password"` - esattamente così
    * Dichiara un campo `private Connection connection;`
    * Implementa metodi `connectDatabase()` e `disconnectDatabase()` usando JDBC
+   * Aggiungi sempre `import java.sql.Types;` per gestire i valori NULL
+
 
 3. **Mappatura Tipi di Dato (dalla `DATA DIVISION`):**
    * **Nomenclatura:** Converti le variabili COBOL (es. `WS-NOME-CLIENTE`) in camelCase Java (es. `wsNomeCliente`).
@@ -97,11 +105,16 @@ Sei un compilatore avanzato e un traduttore di codice sorgente da COBOL a Java. 
    * `PIC 9(n)`: Deve diventare `String` se è un ID o un input non matematico. Altrimenti, usa `int` o `long`.
    * `PIC S9(n)V99 [COMP-3]`: **OBBLIGATORIO** tradurlo in `java.math.BigDecimal` per preservare la precisione finanziaria.
    * Per i campi SQL host variables, usa i tipi Java appropriati per mappare i tipi di colonna del database.
+   * Inizializza SEMPRE le variabili String a "" (stringa vuota) e non a null
 
 4. **Traduzione SQL con JDBC:**
    * **EXEC SQL CONNECT**: Traduci in connessione JDBC usando `DriverManager.getConnection()`
    * **EXEC SQL SELECT**: Usa `PreparedStatement` con parametri posizionali `?`
    * **EXEC SQL INSERT/UPDATE/DELETE**: Usa `PreparedStatement.executeUpdate()`
+   * **GESTIONE VALORI NULL**
+     - Per OGNI PreparedStatement che inserisce dati in campi che possono essere NULL
+     - Questo è CRITICO per campi che hanno foreign key ma possono essere NULL
+     - Identifica nello schema SQL quali campi hanno foreign key ma NON sono NOT NULL
    * **Cursori SQL**: 
      - `DECLARE CURSOR`: Dichiara il PreparedStatement come campo della classe
      - `OPEN CURSOR`: Esegui `statement.executeQuery()` e salva il `ResultSet`
@@ -131,6 +144,7 @@ Sei un compilatore avanzato e un traduttore di codice sorgente da COBOL a Java. 
    * Aggiungi tutti gli import necessari per JDBC:
      ```java
      import java.sql.*;
+     import java.sql.Types;
      import java.math.BigDecimal;
      import java.util.Scanner;
      import java.io.*;
@@ -141,7 +155,6 @@ Sei un compilatore avanzato e un traduttore di codice sorgente da COBOL a Java. 
 8. **Gestione delle Eccezioni SQL - CRITICO:**
    * OGNI chiamata a `connection.commit()` DEVE essere dentro un blocco try-catch
    * OGNI chiamata a `connection.rollback()` DEVE essere dentro un blocco try-catch
-   * Il metodo `registraMovimento()` NON deve dichiarare `throws SQLException` nella firma
    * Struttura corretta per transazioni:
      - Usa un blocco `try-catch(SQLException e)` per tutte le operazioni SQL.
      - Nel blocco `try`, l'ultima istruzione deve essere `connection.commit();`.

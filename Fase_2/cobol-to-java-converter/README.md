@@ -10,3 +10,4 @@ javac GestioneConti.java
 java -cp .:postgresql-42.7.3.jar GestioneConti
 ```
 il postgresql-42.7.3.jar deve essere messo nella stessa cartella del file GestioneConti.java
+dopo che è stato generato il file .java, modificare la database section con i dati del proprio database
