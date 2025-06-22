@@ -35,7 +35,7 @@ import java.util.Scanner;
 public class GestionePaghe {
 
     // --- Configurazione Database ---
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/paghe";
+    private static final String DB_URL = "jdbc:postgresql://localhost/paghe";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = "password";
 
