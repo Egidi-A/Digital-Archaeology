@@ -2,9 +2,9 @@
 ```bash
 source venv/bin/activate
 
-python gemini_java_generator.py
+python python/traduttoreDirettoWithSQL_generator.py
 # oppure
-python python/traduttoreDirettoWithSQL_generator.py --cobol resources/cobol/payroll_system_cobol.cbl --sql resources/sql/payroll_schema.sql
+python python/traduttoreDirettoWithSQL_generator.py --cobol resources/cobol/bank_system_cobol.cbl --sql resources/sql/bank_schema.sql
 
 javac GestioneConti.java
 java -cp .:postgresql-42.7.3.jar GestioneConti
