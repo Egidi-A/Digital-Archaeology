@@ -9,6 +9,9 @@ import re
 from pathlib import Path
 import google.generativeai as genai
 
+API_KEY = "YOUR_API_KEY"
+genai.configure(api_key=API_KEY)
+
 def setup_project_structure(project_name):
     """Crea la struttura standard Maven del progetto"""
     base_dir = Path(project_name)
@@ -59,10 +62,8 @@ def add_package_declaration(java_file, package_name="com"):
     
     return content
 
-def analyze_java_with_gemini(java_content, api_key):
+def analyze_java_with_gemini(java_content):
     """Usa Gemini per analizzare il codice Java e generare il pom.xml"""
-    genai.configure(api_key=api_key)
-    
     generation_config = {
         "temperature": 0.1,
         "top_p": 0.9,
@@ -75,6 +76,7 @@ def analyze_java_with_gemini(java_content, api_key):
         model_name="gemini-2.5-pro-preview-06-05",
         generation_config=generation_config,
     )
+
 
     prompt = f"""
     Analizza il seguente codice Java e genera un file pom.xml completo per Maven.
@@ -108,13 +110,13 @@ def analyze_java_with_gemini(java_content, api_key):
     
     return pom_content
 
-def create_pom_file(project_dir, java_file, class_name, api_key):
+def create_pom_file(project_dir, java_file, class_name):
     """Crea il file pom.xml usando Gemini"""
     with open(java_file, 'r') as f:
         java_content = f.read()
     
     # Genera il pom.xml con Gemini
-    pom_content = analyze_java_with_gemini(java_content, api_key)
+    pom_content = analyze_java_with_gemini(java_content)
     
     # Se Gemini fallisce o restituisce qualcosa di strano, usa un template di base
     if not pom_content or not pom_content.startswith('<?xml'):
@@ -214,7 +216,7 @@ def main():
     parser = argparse.ArgumentParser(description='Automatizza la conversione di un file Java in JAR usando Maven')
     parser.add_argument('java_file', help='Path del file .java da convertire')
     parser.add_argument('--project-name', help='Nome del progetto (default: nome del file)', default=None)
-    parser.add_argument('--gemini-api-key', help='API key di Gemini', required=True)
+    # parser.add_argument('--gemini-api-key', help='API key di Gemini', required=True)
     
     args = parser.parse_args()
     
@@ -249,7 +251,7 @@ def main():
     # 4. Crea il pom.xml usando Gemini
     print("4️⃣ Generazione pom.xml con Gemini...")
     try:
-        pom_path = create_pom_file(project_dir, target_java_file, class_name, args.gemini_api_key)
+        pom_path = create_pom_file(project_dir, target_java_file, class_name)
         print(f"   ✅ pom.xml creato: {pom_path}")
     except Exception as e:
         print(f"   ❌ Errore nella generazione del pom.xml: {e}")
