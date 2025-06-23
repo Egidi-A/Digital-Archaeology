@@ -62,6 +62,78 @@ def add_package_declaration(java_file, package_name="com"):
     
     return content
 
+def detect_dependencies(java_content):
+    """Rileva automaticamente le dipendenze dal codice Java"""
+    dependencies = []
+    
+    # Controllo per PostgreSQL
+    if 'jdbc:postgresql' in java_content or 'postgresql' in java_content.lower():
+        dependencies.append({
+            'groupId': 'org.postgresql',
+            'artifactId': 'postgresql',
+            'version': '42.7.1'
+        })
+    
+    # Controllo per MySQL
+    if 'jdbc:mysql' in java_content or 'com.mysql' in java_content:
+        dependencies.append({
+            'groupId': 'com.mysql.cj',
+            'artifactId': 'mysql-connector-java',
+            'version': '8.0.33'
+        })
+    
+    # Controllo per H2
+    if 'jdbc:h2' in java_content:
+        dependencies.append({
+            'groupId': 'com.h2database',
+            'artifactId': 'h2',
+            'version': '2.2.224'
+        })
+    
+    # Controllo per SQLite
+    if 'jdbc:sqlite' in java_content:
+        dependencies.append({
+            'groupId': 'org.xerial',
+            'artifactId': 'sqlite-jdbc',
+            'version': '3.43.2.2'
+        })
+    
+    # Controllo per Servlet API
+    if 'javax.servlet' in java_content or 'jakarta.servlet' in java_content:
+        dependencies.append({
+            'groupId': 'jakarta.servlet',
+            'artifactId': 'jakarta.servlet-api',
+            'version': '6.0.0',
+            'scope': 'provided'
+        })
+    
+    # Controllo per JSON
+    if 'org.json' in java_content:
+        dependencies.append({
+            'groupId': 'org.json',
+            'artifactId': 'json',
+            'version': '20231013'
+        })
+    
+    # Controllo per Logging
+    if 'org.slf4j' in java_content:
+        dependencies.append({
+            'groupId': 'org.slf4j',
+            'artifactId': 'slf4j-api',
+            'version': '2.0.9'
+        })
+    
+    # Controllo per JUnit
+    if 'org.junit' in java_content or 'import junit' in java_content:
+        dependencies.append({
+            'groupId': 'junit',
+            'artifactId': 'junit',
+            'version': '4.13.2',
+            'scope': 'test'
+        })
+    
+    return dependencies
+
 def analyze_java_with_gemini(java_content):
     """Usa Gemini per analizzare il codice Java e generare il pom.xml"""
     generation_config = {
@@ -73,29 +145,29 @@ def analyze_java_with_gemini(java_content):
     }
     
     model = genai.GenerativeModel(
-        model_name="gemini-2.5-pro-preview-06-05",
+        model_name="gemini-2.0-flash-exp",
         generation_config=generation_config,
     )
-
+    
+    # Rileva automaticamente le dipendenze
+    detected_deps = detect_dependencies(java_content)
+    deps_list = "\n".join([f"- {d['groupId']}:{d['artifactId']}:{d['version']}" for d in detected_deps])
 
     prompt = f"""
-    Analizza il seguente codice Java e genera un file pom.xml completo per Maven.
+    Genera un file pom.xml completo per Maven per il seguente codice Java.
     
-    IMPORTANTE: Esamina ATTENTAMENTE tutti gli import e il codice per identificare TUTTE le dipendenze necessarie.
-    In particolare:
-    - Se vedi import java.sql.* e stringhe JDBC (jdbc:postgresql, jdbc:mysql, etc.), aggiungi il driver appropriato
-    - Se vedi import javax.servlet.*, aggiungi servlet-api
-    - Se vedi import org.json.*, aggiungi json library
-    - Per OGNI import non standard di Java, identifica e aggiungi la dipendenza Maven corrispondente
+    DIPENDENZE RILEVATE CHE DEVONO ESSERE INCLUSE:
+    {deps_list}
     
-    Il pom.xml deve:
-    1. Includere una sezione <dependencies> con TUTTE le dipendenze necessarie basandoti sugli import e l'analisi del codice
-    2. Per driver JDBC: postgresql (42.7.1), mysql (8.0.33), h2 (2.2.224), sqlite (3.43.2.2)
-    3. Usare groupId: com
-    4. Specificare la versione Java appropriata analizzando il codice (es. se usa var, lambda, stream = Java 8+)
-    5. Includere il plugin maven-jar per creare un JAR eseguibile
-    6. Includere il plugin maven-assembly per creare un JAR con tutte le dipendenze
-    7. Restituire SOLO il contenuto XML del pom.xml, senza spiegazioni o markdown
+    Il pom.xml DEVE:
+    1. Includere TUTTE le dipendenze elencate sopra nella sezione <dependencies>
+    2. Usare groupId: com
+    3. Specificare maven.compiler.source e target appropriati (11 se non diversamente indicato)
+    4. Includere maven-jar-plugin con la classe main corretta e outputDirectory impostato su ${{project.basedir}}
+    5. Includere maven-assembly-plugin per creare JAR con dipendenze e outputDirectory impostato su ${{project.basedir}}
+    6. NON dimenticare la sezione <dependencies> con le dipendenze rilevate!
+    
+    Restituisci SOLO l'XML del pom.xml, senza spiegazioni.
     
     Codice Java:
     {java_content}
@@ -103,10 +175,37 @@ def analyze_java_with_gemini(java_content):
     
     response = model.generate_content(prompt)
     
-    # Pulisci la risposta rimuovendo eventuali marcatori di codice
+    # Pulisci la risposta
     pom_content = response.text.strip()
     pom_content = re.sub(r'```xml\s*', '', pom_content)
     pom_content = re.sub(r'```\s*$', '', pom_content)
+    
+    # Verifica che ci sia la sezione dependencies, altrimenti aggiungila forzatamente
+    if detected_deps and '<dependencies>' not in pom_content:
+        print("⚠️  Gemini non ha incluso le dipendenze. Le aggiungo manualmente...")
+        pom_content = inject_dependencies(pom_content, detected_deps)
+    
+    return pom_content
+
+def inject_dependencies(pom_content, dependencies):
+    """Inietta forzatamente le dipendenze nel pom.xml se mancano"""
+    deps_xml = "    <dependencies>\n"
+    for dep in dependencies:
+        deps_xml += "        <dependency>\n"
+        deps_xml += f"            <groupId>{dep['groupId']}</groupId>\n"
+        deps_xml += f"            <artifactId>{dep['artifactId']}</artifactId>\n"
+        deps_xml += f"            <version>{dep['version']}</version>\n"
+        if 'scope' in dep:
+            deps_xml += f"            <scope>{dep['scope']}</scope>\n"
+        deps_xml += "        </dependency>\n"
+    deps_xml += "    </dependencies>\n\n"
+    
+    # Inserisci le dipendenze prima di <build>
+    if '<build>' in pom_content:
+        pom_content = pom_content.replace('<build>', deps_xml + '    <build>')
+    else:
+        # Inserisci prima di </project>
+        pom_content = pom_content.replace('</project>', deps_xml + '</project>')
     
     return pom_content
 
@@ -147,6 +246,7 @@ def create_pom_file(project_dir, java_file, class_name):
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
                 <configuration>
+                    <outputDirectory>${{project.basedir}}</outputDirectory>
                     <archive>
                         <manifest>
                             <mainClass>com.{class_name}</mainClass>
@@ -159,6 +259,7 @@ def create_pom_file(project_dir, java_file, class_name):
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.4.2</version>
                 <configuration>
+                    <outputDirectory>${{project.basedir}}</outputDirectory>
                     <archive>
                         <manifest>
                             <mainClass>com.{class_name}</mainClass>
@@ -261,9 +362,11 @@ def main():
     print("\n5️⃣ Compilazione e creazione JAR con Maven...")
     if build_jar(project_dir):
         print(f"\n✨ Completato! I JAR sono stati creati in:")
-        print(f"   - {project_dir}/target/{project_name}-1.0.0.jar")
-        print(f"   - {project_dir}/target/{project_name}-1.0.0-jar-with-dependencies.jar")
-        print(f"\n🏃 Per eseguire: java -jar {project_dir}/target/{project_name}-1.0.0-jar-with-dependencies.jar")
+        print(f"   - {project_dir}/{project_name}-1.0.0.jar")
+        print(f"   - {project_dir}/{project_name}-1.0.0-jar-with-dependencies.jar")
+        print(f"\n🏃 Per eseguire:")
+        print(f"   cd {project_dir}")
+        print(f"   java -jar {project_name}-1.0.0-jar-with-dependencies.jar")
     else:
         print("\n❌ Compilazione fallita. Controlla gli errori sopra.")
         sys.exit(1)
