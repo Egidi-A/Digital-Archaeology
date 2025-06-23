@@ -162,10 +162,11 @@ def analyze_java_with_gemini(java_content):
     Il pom.xml DEVE:
     1. Includere TUTTE le dipendenze elencate sopra nella sezione <dependencies>
     2. Usare groupId: com
-    3. Specificare maven.compiler.source e target appropriati (11 se non diversamente indicato)
-    4. Includere maven-jar-plugin con la classe main corretta e outputDirectory impostato su ${{project.basedir}}
-    5. Includere maven-assembly-plugin per creare JAR con dipendenze e outputDirectory impostato su ${{project.basedir}}
-    6. NON dimenticare la sezione <dependencies> con le dipendenze rilevate!
+    3. Usare version: 1.0.0 (NON usare SNAPSHOT, voglio una versione release)
+    4. Specificare maven.compiler.source e target appropriati (11 se non diversamente indicato)
+    5. Includere maven-jar-plugin con la classe main corretta e outputDirectory impostato su ${{project.basedir}}
+    6. Includere maven-assembly-plugin per creare JAR con dipendenze e outputDirectory impostato su ${{project.basedir}}
+    7. NON dimenticare la sezione <dependencies> con le dipendenze rilevate!
     
     Restituisci SOLO l'XML del pom.xml, senza spiegazioni.
     
@@ -206,6 +207,27 @@ def inject_dependencies(pom_content, dependencies):
     else:
         # Inserisci prima di </project>
         pom_content = pom_content.replace('</project>', deps_xml + '</project>')
+    
+    return pom_content
+
+def ensure_output_directory(pom_content):
+    """Assicura che outputDirectory sia configurato per mettere i JAR nella root del progetto"""
+    # Pattern per trovare i plugin maven-jar e maven-assembly
+    jar_plugin_pattern = r'(<plugin>\s*<groupId>org\.apache\.maven\.plugins</groupId>\s*<artifactId>maven-jar-plugin</artifactId>.*?<configuration>)(.*?)(</configuration>.*?</plugin>)'
+    assembly_plugin_pattern = r'(<plugin>\s*<groupId>org\.apache\.maven\.plugins</groupId>\s*<artifactId>maven-assembly-plugin</artifactId>.*?<configuration>)(.*?)(</configuration>.*?</plugin>)'
+    
+    # Aggiungi outputDirectory al maven-jar-plugin se non presente
+    if '<outputDirectory>' not in pom_content:
+        def add_output_dir(match):
+            config_start = match.group(1)
+            config_content = match.group(2)
+            config_end = match.group(3)
+            if '<outputDirectory>' not in config_content:
+                config_content = '\n                    <outputDirectory>${project.basedir}</outputDirectory>' + config_content
+            return config_start + config_content + config_end
+        
+        pom_content = re.sub(jar_plugin_pattern, add_output_dir, pom_content, flags=re.DOTALL)
+        pom_content = re.sub(assembly_plugin_pattern, add_output_dir, pom_content, flags=re.DOTALL)
     
     return pom_content
 
@@ -282,6 +304,9 @@ def create_pom_file(project_dir, java_file, class_name):
         </plugins>
     </build>
 </project>"""
+    
+    # Assicura che outputDirectory sia configurato correttamente
+    pom_content = ensure_output_directory(pom_content)
     
     # Scrivi il pom.xml
     pom_path = project_dir / "pom.xml"
@@ -361,12 +386,27 @@ def main():
     # 5. Compila e crea il JAR
     print("\n5️⃣ Compilazione e creazione JAR con Maven...")
     if build_jar(project_dir):
-        print(f"\n✨ Completato! I JAR sono stati creati in:")
-        print(f"   - {project_dir}/{project_name}-1.0.0.jar")
-        print(f"   - {project_dir}/{project_name}-1.0.0-jar-with-dependencies.jar")
-        print(f"\n🏃 Per eseguire:")
-        print(f"   cd {project_dir}")
-        print(f"   java -jar {project_name}-1.0.0-jar-with-dependencies.jar")
+        # Cerca i JAR generati nella directory del progetto
+        jar_files = list(project_dir.glob("*.jar"))
+        
+        if jar_files:
+            print(f"\n✨ Completato! I JAR sono stati creati:")
+            for jar in jar_files:
+                print(f"   - {jar.name}")
+            
+            # Trova il JAR con dipendenze
+            jar_with_deps = [j for j in jar_files if "with-dependencies" in j.name]
+            if jar_with_deps:
+                print(f"\n🏃 Per eseguire:")
+                print(f"   cd {project_dir}")
+                print(f"   java -jar {jar_with_deps[0].name}")
+            else:
+                print(f"\n🏃 Per eseguire:")
+                print(f"   cd {project_dir}")
+                print(f"   java -jar {jar_files[0].name}")
+        else:
+            print(f"\n⚠️  I JAR sono stati creati ma potrebbero essere in target/")
+            print(f"   Controlla manualmente la directory del progetto")
     else:
         print("\n❌ Compilazione fallita. Controlla gli errori sopra.")
         sys.exit(1)
