@@ -1,5 +1,17 @@
 -- Schema database per Sistema Gestione Magazzino e Inventario
--- Compatibile con PostgreSQL/MySQL
+-- Compatibile con PostgreSQL
+
+-- Elimina le tabelle se esistono (in ordine inverso per rispettare le foreign key)
+DROP TABLE IF EXISTS RIGHE_INVENTARIO CASCADE;
+DROP TABLE IF EXISTS INVENTARI CASCADE;
+DROP TABLE IF EXISTS RIGHE_ORDINE CASCADE;
+DROP TABLE IF EXISTS ORDINI CASCADE;
+DROP TABLE IF EXISTS LOTTI CASCADE;
+DROP TABLE IF EXISTS MOVIMENTI_MAGAZZINO CASCADE;
+DROP TABLE IF EXISTS GIACENZE CASCADE;
+DROP TABLE IF EXISTS ARTICOLI CASCADE;
+DROP TABLE IF EXISTS CATEGORIE CASCADE;
+DROP TABLE IF EXISTS FORNITORI CASCADE;
 
 -- Tabella FORNITORI
 CREATE TABLE FORNITORI (
@@ -159,13 +171,15 @@ CREATE INDEX idx_righe_ordine_numero ON RIGHE_ORDINE(numero_ordine);
 CREATE INDEX idx_lotti_articolo ON LOTTI(codice_articolo);
 CREATE INDEX idx_lotti_data ON LOTTI(data_carico);
 
--- Dati di esempio
+-- DATI DI ESEMPIO
+-- Inserimento fornitori
 INSERT INTO FORNITORI (codice_fornitore, ragione_sociale, partita_iva, indirizzo, citta, cap, provincia, telefono, email, condizioni_pagamento)
 VALUES 
     ('FOR00001', 'Elettronica SpA', '12345678901', 'Via Industria 100', 'Milano', '20100', 'MI', '0212345678', 'info@elettronica.it', '30 gg FM'),
     ('FOR00002', 'Componenti Srl', '23456789012', 'Via Commercio 50', 'Torino', '10100', 'TO', '0119876543', 'ordini@componenti.it', '60 gg FM'),
     ('FOR00003', 'Tech Supplies', '34567890123', 'Zona Industriale 1', 'Bologna', '40100', 'BO', '0514567890', 'tech@supplies.it', '90 gg FM');
 
+-- Inserimento categorie
 INSERT INTO CATEGORIE (codice_categoria, descrizione, reparto, aliquota_iva)
 VALUES 
     ('ELET', 'Componenti Elettronici', 'Elettronica', 22.00),
@@ -173,6 +187,7 @@ VALUES
     ('CONS', 'Materiale di Consumo', 'Generale', 22.00),
     ('TOOL', 'Attrezzature', 'Manutenzione', 22.00);
 
+-- Inserimento articoli
 INSERT INTO ARTICOLI (codice_articolo, descrizione, codice_categoria, unita_misura, codice_fornitore, 
                      prezzo_acquisto, prezzo_vendita, scorta_minima, punto_riordino, lotto_riordino, ubicazione)
 VALUES 
@@ -187,7 +202,7 @@ VALUES
     ('ART0000009', 'Stagno 60/40 1mm 100g', 'CONS', 'PZ', 'FOR00001', 12.00, 18.50, 10, 20, 30, 'C02-01'),
     ('ART0000010', 'Breadboard 830 punti', 'ELET', 'PZ', 'FOR00001', 4.50, 8.90, 20, 40, 100, 'A02-01');
 
--- Inizializza giacenze
+-- Inizializza giacenze - CORREZIONE: uso sintassi PostgreSQL corretta
 INSERT INTO GIACENZE (codice_articolo, quantita_disponibile, valore_medio, valore_ultimo, data_ultimo_carico)
 SELECT codice_articolo, 
        CASE 
@@ -201,7 +216,7 @@ SELECT codice_articolo,
        END,
        prezzo_acquisto,
        prezzo_acquisto,
-       CURRENT_DATE - INTERVAL '30 days'
+       (CURRENT_DATE - INTERVAL '30' DAY)::DATE
 FROM ARTICOLI;
 
 -- Movimenti di esempio
