@@ -8,6 +8,8 @@ python python/traduttoreDirettoWithSQL_generator.py --cobol resources/cobol/bank
 
 javac GestioneConti.java
 java -cp .:postgresql-42.7.3.jar GestioneConti
+```
+
 
 python python/generazioneUnitTest.py --java output/Gestione-Conti/GestioneConti.java
 ```
