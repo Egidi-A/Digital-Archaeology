@@ -26,3 +26,12 @@ implementazioni future:
 - gestione automaticcata del javac
 - gestione automatizzata del java
 
+
+# Rendi eseguibile lo script (solo la prima volta)
+chmod +x java_to_jar.py
+
+# Esegui lo script
+python python/java_to_jar.py trials/Gestione-Conti-1/GestioneConti.java --gemini-api-key YOUR_API_KEY
+
+# O con un nome di progetto personalizzato
+python python/java_to_jar.py trials/Gestione-Conti-1/GestioneConti.java --project-name PacchettizzazioneConti --gemini-api-key YOUR_API_KEY
