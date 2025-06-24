@@ -6,6 +6,8 @@ import subprocess
 import shutil
 import argparse
 from pathlib import Path
+import re
+
 
 def find_input_files(input_dir):
     """Trova i file .cbl e .sql nella directory di input."""
@@ -157,7 +159,15 @@ def main():
     print("✓ Fase 3 completata\n")
 
     # --- RIEPILOGO FINALE ---
-    jar_with_deps_name = f"{project_name}-1.0.0-jar-with-dependencies.jar"
+    # Leggi il nome della classe dal file Java generato per determinare il nome del JAR
+    with open(java_output_file, 'r') as f:
+        java_content = f.read()
+        class_match = re.search(r'public\s+class\s+(\w+)', java_content)
+        if class_match:
+            class_name = class_match.group(1)
+            jar_with_deps_name = f"{class_name}-1.0.0-jar-with-dependencies.jar"
+        else:
+            jar_with_deps_name = f"{project_name}-1.0.0-jar-with-dependencies.jar"
     
     print("═══════════════════════════════════════════════════════════════")
     print("                    CONVERSIONE COMPLETATA")
