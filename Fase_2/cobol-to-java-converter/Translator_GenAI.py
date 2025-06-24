@@ -13,10 +13,10 @@ def read_source_file(filepath):
         with open(filepath, 'r', encoding='utf-8') as file:
             return file.read()
     except FileNotFoundError:
-        print(f"    ✗ Errore: File non trovato '{filepath}'", file=sys.stderr)
+        print(f"    ❌ Errore: File non trovato '{filepath}'", file=sys.stderr)
         return None
     except Exception as e:
-        print(f"    ✗ Errore durante la lettura del file '{filepath}': {e}", file=sys.stderr)
+        print(f"    ❌ Errore durante la lettura del file '{filepath}': {e}", file=sys.stderr)
         return None
 
 def save_java_file(java_code, output_path):
@@ -37,7 +37,7 @@ def save_java_file(java_code, output_path):
             file.write(java_code.strip())
         print(f"    ✓ File Java salvato: {output_path}")
     except Exception as e:
-        print(f"    ✗ Errore durante il salvataggio: {e}", file=sys.stderr)
+        print(f"    ❌ Errore durante il salvataggio: {e}", file=sys.stderr)
 
 def translate_cobol_to_java_with_jdbc(cobol_code, sql_schema=None):
     """
@@ -174,12 +174,12 @@ Procedi con la traduzione completa includendo l'implementazione JDBC reale per t
 """
     
     try:
-        print(f"    ↳ Invio richiesta a Gemini API...")
+        print(f"    📤 Invio richiesta a Gemini API...")
         response = model.generate_content(prompt)
         print(f"    ✓ Risposta ricevuta da Gemini")
         return response.text
     except Exception as e:
-        print(f"    ✗ Errore API Gemini: {e}", file=sys.stderr)
+        print(f"    ❌ Errore API Gemini: {e}", file=sys.stderr)
         return None
 
 def main():
@@ -196,12 +196,11 @@ def main():
     
     args = parser.parse_args()
     
-    print(f"\n[TRADUZIONE] COBOL → Java")
-    print(f"  ↳ Lettura file COBOL: {os.path.basename(args.cobol)}")
+    print(f"   📖 Lettura file COBOL: {os.path.basename(args.cobol)}")
     cobol_code_content = read_source_file(args.cobol)
     
     if not cobol_code_content:
-        print(f"    ✗ Impossibile leggere il file COBOL")
+        print(f"    ❌ Impossibile leggere il file COBOL")
         sys.exit(1)
     else:
         print(f"    ✓ File COBOL letto correttamente")
@@ -209,22 +208,22 @@ def main():
     # Leggi lo schema SQL se disponibile
     sql_schema_content = None
     if args.sql and os.path.exists(args.sql):
-        print(f"  ↳ Lettura schema SQL: {os.path.basename(args.sql)}")
+        print(f" 🗃️  Lettura schema SQL: {os.path.basename(args.sql)}")
         sql_schema_content = read_source_file(args.sql)
 
         if sql_schema_content:
             print(f"    ✓ Schema SQL caricato")
     else:
-        print(f"    ⚠ Nessuno schema SQL fornito")
+        print(f"    ⚠️ Nessuno schema SQL fornito")
     
-    print(f"  ↳ Traduzione in corso...")
+    print(f" 🔄 Traduzione in corso...")
     generated_java_code = translate_cobol_to_java_with_jdbc(cobol_code_content, sql_schema_content)
     
     if generated_java_code:
         save_java_file(generated_java_code, args.output)
-        print(f"  ✓ Traduzione completata\n")
+        print(f" ✅ Traduzione completata\n")
     else:
-        print(f"  ✗ Traduzione fallita\n", file=sys.stderr)
+        print(f" ❌ Traduzione fallita\n", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

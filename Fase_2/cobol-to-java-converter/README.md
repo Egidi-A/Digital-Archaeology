@@ -40,3 +40,8 @@ python python/java_to_jar.py trials/Gestione-Conti-1/GestioneConti.java --projec
 
 // DA MIGLIORARE A 24/06
 -- api key non esplicita
+-- readme
+-- gestione di quando non funziona
+-- doppia cartella input
+-- cartella creata automaticamente non va in output
+-- con un modello minore, funziona?

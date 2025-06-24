@@ -140,14 +140,14 @@ def create_pom_file(project_dir, java_file, class_name):
     with open(java_file, 'r') as f:
         java_content = f.read()
     
-    print(f"    ↳ Invio richiesta a Gemini API...")
+    print(f"    📤 Invio richiesta a Gemini API...")
     
     # Genera il pom.xml con Gemini
     pom_content = analyze_java_with_gemini(java_content)
     
     # Se Gemini fallisce o restituisce qualcosa di strano, usa un template di base
     if not pom_content or not pom_content.startswith('<?xml'):
-        print("    ⚠ Usando template pom.xml di base")
+        print("    ⚠️  Usando template pom.xml di base")
         pom_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -231,11 +231,11 @@ def build_jar(project_dir):
     try:
         subprocess.run(["mvn", "--version"], check=True, capture_output=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("    ✗ Maven non è installato")
+        print("    ❌ Maven non è installato")
         return False
     
     # Compila e crea il JAR
-    print(f"  ↳ Compilazione e creazione JAR...")
+    print(f" 🔨 Compilazione e creazione JAR...")
     result = subprocess.run(["mvn", "clean", "package"], capture_output=True, text=True)
     
     if result.returncode == 0:
@@ -245,10 +245,10 @@ def build_jar(project_dir):
             for line in result.stdout.split('\n'):
                 if '[INFO]' in line and any(x in line for x in ['BUILD', 'Building', 'SUCCESS']):
                     msg = line.split('] ', 1)[-1] if '] ' in line else line
-                    print(f"    ℹ {msg}")
+                    print(f"    ℹ️  {msg}")
         return True
     else:
-        print(f"    ✗ Errore durante la compilazione")
+        print(f"    ❌ Errore durante la compilazione")
         # Mostra errori principali
         if result.stderr:
             for line in result.stderr.split('\n'):
@@ -271,7 +271,7 @@ def stampa_albero_directory(root_dir, prefix=""):
     
     path = Path(root_dir)
     if not path.is_dir():
-        print(f"    ✗ {root_dir} non è una directory valida")
+        print(f"    ❌ {root_dir} non è una directory valida")
         return
 
     # Ottieni la lista di file/cartelle e ordinali
@@ -302,25 +302,24 @@ def main():
     # Verifica che il file esista
     java_file = Path(args.java_file)
     if not java_file.exists() or not java_file.suffix == '.java':
-        print(f"✗ File non trovato o non è un file .java: {java_file}")
+        print(f"❌ File non trovato o non è un file .java: {java_file}")
         sys.exit(1)
     
     # Determina il nome del progetto e della classe
     project_name = args.project_name or java_file.stem
     class_name = get_class_name(java_file)
     
-    print(f"\n[MAVEN] Creazione progetto Java")
-    print(f"  ↳ File sorgente: {java_file.name}")
+    print(f"    📄 File sorgente: {java_file.name}")
     print(f"    ✓ Nome progetto: {project_name}")
     print(f"    ✓ Classe principale: {class_name}")
     
     # 1. Crea la struttura del progetto
-    print(f"  ↳ Creazione struttura Maven...")
+    print(f" 🏗️  Creazione struttura Maven...")
     project_dir = setup_project_structure(project_name)
     print(f"    ✓ Directory create: {project_name}/")
     
     # 2. Aggiungi il package declaration
-    print(f"  ↳ Preparazione file Java...")
+    print(f" 📝 Preparazione file Java...")
     modified_content = add_package_declaration(java_file, "com")
     
     # 3. Copia il file nella posizione corretta
@@ -331,12 +330,12 @@ def main():
     print(f"    ✓ File Java copiato")
     
     # 4. Crea il pom.xml usando Gemini
-    print(f"  ↳ Generazione pom.xml...")
+    print(f" 📄 Generazione pom.xml...")
     try:
         pom_path = create_pom_file(project_dir, target_java_file, class_name)
         print(f"    ✓ pom.xml creato")
     except Exception as e:
-        print(f"    ✗ Errore nella generazione del pom.xml: {e}")
+        print(f"    ❌ Errore nella generazione del pom.xml: {e}")
         sys.exit(1)
     
     # 5. Compila e crea il JAR
@@ -346,7 +345,7 @@ def main():
         jar_files = list(project_dir.glob("*.jar"))
         
         if jar_files:
-            print(f"  ✓ Processo completato")
+            print(f" ✅ Processo completato")
             
             # Trova il JAR con dipendenze
             jar_with_deps = [j for j in jar_files if "with-dependencies" in j.name]
@@ -355,9 +354,9 @@ def main():
             else:
                 print(f"    ✓ JAR creato: {jar_files[0].name}")
         else:
-            print(f"  ⚠ I JAR potrebbero essere in target/")
+            print(f"  ⚠️ I JAR potrebbero essere in target/")
     else:
-        print(f"  ✗ Compilazione fallita")
+        print(f" ❌ Compilazione fallita")
         sys.exit(1)
     
     print()  # Riga vuota finale per separazione
