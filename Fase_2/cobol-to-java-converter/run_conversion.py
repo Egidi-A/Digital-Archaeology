@@ -72,8 +72,8 @@ def main():
     )
     args = parser.parse_args()
 
-    # --- 1. SETUP DEI PERCORSI ---
-    print("🚀 Inizio del processo di automazione COBOL-to-JAR 🚀\n")
+    # --- SETUP INIZIALE ---
+    print("\n\n🚀 Inizio del processo di automazione - COBOL to Java Converter 🚀\n")
     base_dir = Path(__file__).parent.resolve()
     input_dir = base_dir / "input"
     output_dir = base_dir / "output"
@@ -89,35 +89,35 @@ def main():
     java_output_file = output_dir / f"{project_name}.java"
     final_project_dir = base_dir / project_name
     
-    print(f"▶️ File COBOL trovato: {cobol_file.name}")
-    print(f"▶️ File SQL trovato: {sql_file.name}")
-    print(f"▶️ Nome Progetto: {project_name}\n")
+    print(f"  ▶️  File COBOL: {cobol_file.name}")
+    print(f"  ▶️  File SQL  : {sql_file.name}")
+    print(f"  ▶️  Progetto  : {project_name}\n")
 
-    # --- 2. ESECUZIONE DI Translator_GenAI.py ---
+    # --- PASSO 1: TRADUZIONE ---
     translator_command = [
         "Translator_GenAI.py",
         "--cobol", str(cobol_file),
         "--sql", str(sql_file),
         "--output", str(java_output_file)
     ]
-    if not run_command(translator_command, "Passo 1: Traduzione da COBOL a Java"):
+    if not run_command(translator_command, "[PASSO 1] Traduzione da COBOL a Java"):
         sys.exit(1)
+    print("✅ [PASSO 1] Completato.\n")
+
 
     if not java_output_file.exists():
         print(f"❌ ERRORE: Il file Java '{java_output_file}' non è stato creato. Interruzione.")
         sys.exit(1)
         
-    # --- 3. ESECUZIONE DI java_to_jar.py ---
-    jar_creator_command = [
-        "java_to_jar.py",
-        str(java_output_file),
-        "--project-name", project_name
-    ]
-    if not run_command(jar_creator_command, "Passo 2: Creazione del Progetto Maven e del JAR"):
+    # --- PASSO 2: PACCHETTIZZAZIONE ---
+    jar_creator_command = [ "java_to_jar.py", str(java_output_file), "--project-name", project_name ]
+    if not run_command(jar_creator_command, "[PASSO 2] Creazione del Progetto Maven e del JAR"):
         sys.exit(1)
+    print("✅ [PASSO 2] Completato.\n")
 
-    # --- 4. COPIA DEI FILE DI INPUT ORIGINALI ---
-    print("\n--- Inizio: Passo 3: Archiviazione degli input originali ---")
+
+    # --- PASSO 3: ARCHIVIAZIONE ---
+    print("[PASSO 3] Archiviazione degli input originali...")
     if final_project_dir.exists() and final_project_dir.is_dir():
         final_input_storage = final_project_dir / "input"
         final_input_storage.mkdir(exist_ok=True)
@@ -125,22 +125,23 @@ def main():
         shutil.copy2(cobol_file, final_input_storage)
         shutil.copy2(sql_file, final_input_storage)
         
-        print(f"✅ File '{cobol_file.name}' e '{sql_file.name}' copiati in '{final_input_storage}'")
+        print(f"  ✔︎ File originali copiati in '{final_input_storage}'")
     else:
-        print(f"⚠️ ATTENZIONE: La directory del progetto '{final_project_dir}' non è stata trovata. Impossibile copiare i file di input.")
+        print(f"  ⚠️  ATTENZIONE: La directory del progetto '{final_project_dir}' non è stata trovata.")
+    print("✅ [PASSO 3] Completato.\n")
 
-    # --- 5. CONCLUSIONE ---
+    # --- CONCLUSIONE ---
     jar_with_deps_name = f"{project_name}-1.0.0-jar-with-dependencies.jar"
     final_jar_path = final_project_dir / jar_with_deps_name
     
-    print("\n\n✨✨✨ PROCESSO COMPLETATO ✨✨✨")
+    print("\n✨ PROCESSO COMPLETATO ✨")
     print("\nIl progetto Maven è stato creato e il JAR eseguibile è pronto.")
-    print(f"\n📁 Directory Progetto: {final_project_dir}")
-    print(f"📦 JAR Eseguibile: {final_jar_path.name}")
+    print(f"\n  📁 Directory Progetto: {final_project_dir.resolve()}")
+    print(f"  📦 JAR Eseguibile:   {jar_with_deps_name}")
     print("\nPer eseguire il programma:")
     print(f"  cd {project_name}")
     print(f"  java -jar {jar_with_deps_name}")
-    print("\nAssicurati che il database PostgreSQL sia in esecuzione e configurato come specificato nel codice Java generato.")
+    print("\nAssicurati che il database PostgreSQL sia in esecuzione e configurato.")
 
 
 if __name__ == "__main__":

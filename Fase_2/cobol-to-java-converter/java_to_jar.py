@@ -9,9 +9,14 @@ import re
 from pathlib import Path
 import google.generativeai as genai
 
+# --- CONFIGURAZIONE ---
 API_KEY = "YOUR_API_KEY"
 genai.configure(api_key=API_KEY)
 
+# Prefisso per l'indentazione dell'output
+INDENT = "  "
+
+# --- FUNZIONI HELPER ---
 def setup_project_structure(project_name):
     """Crea la struttura standard Maven del progetto"""
     base_dir = Path(project_name)
@@ -31,39 +36,48 @@ def setup_project_structure(project_name):
 
 def get_class_name(java_file):
     """Estrae il nome della classe principale dal file Java"""
-    with open(java_file, 'r') as f:
-        content = f.read()
+    try:
+        with open(java_file, 'r') as f:
+            content = f.read()
+            
+        # Cerca la classe pubblica
+        public_class = re.search(r'public\s+class\s+(\w+)', content)
+        if public_class:
+            return public_class.group(1)
         
-    # Cerca la classe pubblica
-    public_class = re.search(r'public\s+class\s+(\w+)', content)
-    if public_class:
-        return public_class.group(1)
+        # Se non c'è una classe pubblica, cerca qualsiasi classe
+        any_class = re.search(r'class\s+(\w+)', content)
+        if any_class:
+            return any_class.group(1)
     
-    # Se non c'è una classe pubblica, cerca qualsiasi classe
-    any_class = re.search(r'class\s+(\w+)', content)
-    if any_class:
-        return any_class.group(1)
+    except Exception as e:
+        print(f"{INDENT}⚠️ Non è stato possibile analizzare il nome della classe: {e}", file=sys.stderr)
+
     
     # Usa il nome del file come fallback
     return Path(java_file).stem
 
-def add_package_declaration(java_file, package_name="com"):
-    """Aggiunge la dichiarazione del package come prima linea"""
-    with open(java_file, 'r') as f:
-        content = f.read()
-    
-    # Verifica se c'è già una dichiarazione package
-    if re.match(r'^\s*package\s+', content):
-        # Sostituisci il package esistente
-        content = re.sub(r'^\s*package\s+[^;]+;', f'package {package_name};', content)
-    else:
-        # Aggiungi il package all'inizio
-        content = f'package {package_name};\n\n' + content
-    
-    return content
+def add_package_declaration(java_file_path, package_name="com"):
+    """Aggiunge 'package com;' all'inizio del file Java se non è già presente."""
+    try:
+        with open(java_file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
 
-def analyze_java_with_gemini(java_content):
-    """Usa Gemini per analizzare il codice Java e generare il pom.xml"""
+        # Controlla se una dichiarazione di package esiste già
+        if any(line.strip().startswith('package') for line in lines):
+            # Se esiste, non facciamo nulla per evitare conflitti
+            return "".join(lines)
+            
+        # Altrimenti, la aggiungiamo
+        return f'package {package_name};\n\n' + "".join(lines)
+    except Exception as e:
+        print(f"{INDENT}❌ Errore nell'aggiungere la dichiarazione del package: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def analyze_java_with_gemini(project_dir, java_content):
+    """Usa Gemini per analizzare il codice Java e generare un file pom.xml completo."""
+    print(f"{INDENT}-> Analisi del codice Java con Gemini per generare il pom.xml...")
+
     generation_config = {
         "temperature": 0.1,
         "top_p": 0.9,
@@ -105,14 +119,25 @@ def analyze_java_with_gemini(java_content):
     {java_content}
     """
     
-    response = model.generate_content(prompt)
+    try:
+        response = model.generate_content(prompt)
+        pom_content = response.text.strip()
+
+        if not pom_content.startswith('<?xml'):
+            raise ValueError("L'output di Gemini non è un XML valido.")
+
+        print(f"{INDENT}✔︎ Analisi completata, pom.xml generato.")
+
+        pom_path = project_dir / "pom.xml"
+        with open(pom_path, 'w', encoding='utf-8') as f:
+            f.write(pom_content)
+        print(f"{INDENT}✔︎ File pom.xml salvato in '{pom_path}'")
+        return True
     
-    # Pulisci la risposta
-    pom_content = response.text.strip()
-    pom_content = re.sub(r'```xml\s*', '', pom_content)
-    pom_content = re.sub(r'```\s*$', '', pom_content)
-    
-    return pom_content
+    except Exception as e:
+        print(f"{INDENT}❌ Errore durante la generazione del pom.xml con Gemini: {e}", file=sys.stderr)
+        return False
+
 
 def ensure_output_directory(pom_content):
     """Assicura che outputDirectory sia configurato per mettere i JAR nella root del progetto"""
@@ -220,39 +245,37 @@ def create_pom_file(project_dir, java_file, class_name):
     return pom_path
 
 def build_jar(project_dir):
-    """Esegue Maven per creare il JAR"""
+    """Esegue il comando 'mvn clean package' per compilare il progetto e creare il JAR."""
+    # Ci spostiamo nella directory del progetto per eseguire Maven
+    original_dir = Path.cwd()
     os.chdir(project_dir)
     
-    # Verifica se Maven è installato
     try:
-        subprocess.run(["mvn", "--version"], check=True, capture_output=True)
+        # Verifica che Maven sia installato e accessibile
+        subprocess.run(["mvn", "--version"], check=True, capture_output=True, text=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("❌ Maven non è installato! Installa Maven prima di eseguire questo script.")
+        print(f"{INDENT}❌ Maven (mvn) non trovato. Assicurati che sia installato e presente nel PATH di sistema.", file=sys.stderr)
+        os.chdir(original_dir)
         return False
     
-    # Compila e crea il JAR
-    print("📦 Compilazione e creazione del JAR...")
-    result = subprocess.run(["mvn", "clean", "package"], capture_output=True, text=True)
+    print(f"{INDENT}-> Compilazione del progetto e creazione del JAR con Maven (potrebbe richiedere del tempo)...")
+
+    # Eseguiamo Maven in modalità "quiet" (-q) per un output più pulito.
+    # Verranno mostrati solo gli errori o i warning critici.
+    result = subprocess.run(["mvn", "clean", "package", "-q"], capture_output=True, text=True, encoding='utf-8')
+
+    os.chdir(original_dir) # Torniamo alla directory originale
     
     if result.returncode == 0:
-        print("✅ JAR creato con successo!")
-        # Mostra anche l'output di successo se verbose
-        if result.stdout:
-            print("\n📋 Output Maven:")
-            print(result.stdout)
+        print(f"{INDENT}✔︎ Build Maven completato con successo.")
         return True
     else:
-        print("❌ Errore durante la compilazione:")
-        # Mostra sia stderr che stdout per avere tutti i dettagli
-        if result.stderr:
-            print("\n🔴 Errori:")
-            print(result.stderr)
-        if result.stdout:
-            print("\n📋 Output completo Maven:")
-            print(result.stdout)
+        print(f"{INDENT}❌ Errore durante la compilazione con Maven:", file=sys.stderr)
+        # Stampa l'errore completo per il debug
+        full_error_log = result.stdout + "\n" + result.stderr
+        for line in full_error_log.strip().split('\n'):
+            print(f"    {line}", file=sys.stderr)
         return False
-
-# <<< INSERISCI QUI LA NUOVA FUNZIONE
 
 def stampa_albero_directory(root_dir, prefix=""):
     """Stampa una rappresentazione ad albero della directory specificata."""
@@ -283,42 +306,39 @@ def stampa_albero_directory(root_dir, prefix=""):
             stampa_albero_directory(item, prefix=new_prefix)
 
 def main():
-    parser = argparse.ArgumentParser(description='Automatizza la conversione di un file Java in JAR usando Maven')
+    """Punto di ingresso per lo script di pacchettizzazione."""
+    parser = argparse.ArgumentParser(description='Converte un file Java in un JAR eseguibile usando Maven e Gemini')
     parser.add_argument('java_file', help='Path del file .java da convertire')
-    parser.add_argument('--project-name', help='Nome del progetto (default: nome del file)', default=None)
+    parser.add_argument('--project-name', help='--project-name', help='Nome del progetto (default: nome del file Java)')
     # parser.add_argument('--gemini-api-key', help='API key di Gemini', required=True)
     
     args = parser.parse_args()
     
+    java_file_path = Path(args.java_file)
+
     # Verifica che il file esista
     java_file = Path(args.java_file)
-    if not java_file.exists() or not java_file.suffix == '.java':
-        print(f"❌ File non trovato o non è un file .java: {java_file}")
+    if not java_file_path.is_file():
+        print(f"❌ File non trovato: {java_file_path}", file=sys.stderr)
         sys.exit(1)
-    
+
     # Determina il nome del progetto e della classe
-    project_name = args.project_name or java_file.stem
-    class_name = get_class_name(java_file)
-    
-    print(f"🚀 Avvio conversione di {java_file.name} in JAR...")
-    print(f"📁 Nome progetto: {project_name}")
-    print(f"📝 Classe principale: {class_name}")
-    
-    # 1. Crea la struttura del progetto
-    print("\n1️⃣ Creazione struttura del progetto...")
+    project_name = args.project_name or java_file_path.stem
+    class_name = get_class_name(java_file_path)
+
+    print(f"{INDENT}-> Configurazione progetto: {project_name} (classe principale: {class_name})")
+
+    # 1. Crea la struttura del progetto Maven
     project_dir = setup_project_structure(project_name)
     
-    # 2. Aggiungi il package declaration
-    print("2️⃣ Aggiunta package declaration...")
-    modified_content = add_package_declaration(java_file, "com")
-    
-    # 3. Copia il file nella posizione corretta
-    print("3️⃣ Spostamento file Java...")
+    # 2. Aggiungi la dichiarazione 'package' e sposta il file
+    modified_content = add_package_declaration(java_file_path)
     target_java_file = project_dir / "src" / "main" / "java" / "com" / f"{class_name}.java"
-    with open(target_java_file, 'w') as f:
+    with open(target_java_file, 'w', encoding='utf-8') as f:
         f.write(modified_content)
+    print(f"{INDENT}✔︎ Struttura progetto creata e file Java posizionato.")
     
-    # 4. Crea il pom.xml usando Gemini
+    # 3. Genera e crea il pom.xml
     print("4️⃣ Generazione pom.xml con Gemini...")
     try:
         pom_path = create_pom_file(project_dir, target_java_file, class_name)
@@ -326,6 +346,7 @@ def main():
     except Exception as e:
         print(f"   ❌ Errore nella generazione del pom.xml: {e}")
         sys.exit(1)
+
     
     # 5. Compila e crea il JAR
     print("\n5️⃣ Compilazione e creazione JAR con Maven...")

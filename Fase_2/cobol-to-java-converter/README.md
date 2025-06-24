@@ -35,3 +35,8 @@ python python/java_to_jar.py trials/Gestione-Conti-1/GestioneConti.java --gemini
 
 # O con un nome di progetto personalizzato
 python python/java_to_jar.py trials/Gestione-Conti-1/GestioneConti.java --project-name PacchettizzazioneConti --gemini-api-key YOUR_API_KEY
+
+
+
+// DA MIGLIORARE A 24/06
+-- api key non esplicita
