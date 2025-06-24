@@ -62,78 +62,6 @@ def add_package_declaration(java_file, package_name="com"):
     
     return content
 
-def detect_dependencies(java_content):
-    """Rileva automaticamente le dipendenze dal codice Java"""
-    dependencies = []
-    
-    # Controllo per PostgreSQL
-    if 'jdbc:postgresql' in java_content or 'postgresql' in java_content.lower():
-        dependencies.append({
-            'groupId': 'org.postgresql',
-            'artifactId': 'postgresql',
-            'version': '42.7.1'
-        })
-    
-    # Controllo per MySQL
-    if 'jdbc:mysql' in java_content or 'com.mysql' in java_content:
-        dependencies.append({
-            'groupId': 'com.mysql.cj',
-            'artifactId': 'mysql-connector-java',
-            'version': '8.0.33'
-        })
-    
-    # Controllo per H2
-    if 'jdbc:h2' in java_content:
-        dependencies.append({
-            'groupId': 'com.h2database',
-            'artifactId': 'h2',
-            'version': '2.2.224'
-        })
-    
-    # Controllo per SQLite
-    if 'jdbc:sqlite' in java_content:
-        dependencies.append({
-            'groupId': 'org.xerial',
-            'artifactId': 'sqlite-jdbc',
-            'version': '3.43.2.2'
-        })
-    
-    # Controllo per Servlet API
-    if 'javax.servlet' in java_content or 'jakarta.servlet' in java_content:
-        dependencies.append({
-            'groupId': 'jakarta.servlet',
-            'artifactId': 'jakarta.servlet-api',
-            'version': '6.0.0',
-            'scope': 'provided'
-        })
-    
-    # Controllo per JSON
-    if 'org.json' in java_content:
-        dependencies.append({
-            'groupId': 'org.json',
-            'artifactId': 'json',
-            'version': '20231013'
-        })
-    
-    # Controllo per Logging
-    if 'org.slf4j' in java_content:
-        dependencies.append({
-            'groupId': 'org.slf4j',
-            'artifactId': 'slf4j-api',
-            'version': '2.0.9'
-        })
-    
-    # Controllo per JUnit
-    if 'org.junit' in java_content or 'import junit' in java_content:
-        dependencies.append({
-            'groupId': 'junit',
-            'artifactId': 'junit',
-            'version': '4.13.2',
-            'scope': 'test'
-        })
-    
-    return dependencies
-
 def analyze_java_with_gemini(java_content):
     """Usa Gemini per analizzare il codice Java e generare il pom.xml"""
     generation_config = {
@@ -148,27 +76,30 @@ def analyze_java_with_gemini(java_content):
         model_name="gemini-2.0-flash-exp",
         generation_config=generation_config,
     )
-    
-    # Rileva automaticamente le dipendenze
-    detected_deps = detect_dependencies(java_content)
-    deps_list = "\n".join([f"- {d['groupId']}:{d['artifactId']}:{d['version']}" for d in detected_deps])
 
     prompt = f"""
-    Genera un file pom.xml completo per Maven per il seguente codice Java.
-    
-    DIPENDENZE RILEVATE CHE DEVONO ESSERE INCLUSE:
-    {deps_list}
+    Analizza il seguente codice Java e genera un file pom.xml completo per Maven.
     
     Il pom.xml DEVE:
-    1. Includere TUTTE le dipendenze elencate sopra nella sezione <dependencies>
+    1. Analizzare TUTTI gli import nel codice Java e includere SOLO le dipendenze Maven effettivamente necessarie
     2. Usare groupId: com
     3. Usare version: 1.0.0 (NON usare SNAPSHOT, voglio una versione release)
     4. Specificare maven.compiler.source e target appropriati (11 se non diversamente indicato)
     5. Includere maven-jar-plugin con la classe main corretta e outputDirectory impostato su ${{project.basedir}}
     6. Includere maven-assembly-plugin per creare JAR con dipendenze e outputDirectory impostato su ${{project.basedir}}
-    7. NON dimenticare la sezione <dependencies> con le dipendenze rilevate!
+    7. Per le dipendenze:
+       - Includi SOLO librerie esterne effettivamente usate nel codice
+       - NON includere dipendenze per classi standard Java (java.*, javax.* che sono parte del JDK)
+       - Se vedi jdbc:postgresql -> aggiungi org.postgresql:postgresql (ultima versione stabile)
+       - Se vedi jdbc:mysql -> aggiungi mysql driver
+       - Se vedi import di librerie esterne (non JDK) -> aggiungi la dipendenza appropriata
     
-    Restituisci SOLO l'XML del pom.xml, senza spiegazioni.
+    IMPORTANTE: 
+    - Non aggiungere dipendenze "preventive" o "utili in generale"
+    - Aggiungi SOLO le dipendenze per le librerie effettivamente importate e usate nel codice
+    - Per PostgreSQL usa versione 42.7.1 o superiore
+    
+    Restituisci SOLO l'XML del pom.xml, senza spiegazioni o commenti.
     
     Codice Java:
     {java_content}
@@ -180,33 +111,6 @@ def analyze_java_with_gemini(java_content):
     pom_content = response.text.strip()
     pom_content = re.sub(r'```xml\s*', '', pom_content)
     pom_content = re.sub(r'```\s*$', '', pom_content)
-    
-    # Verifica che ci sia la sezione dependencies, altrimenti aggiungila forzatamente
-    if detected_deps and '<dependencies>' not in pom_content:
-        print("⚠️  Gemini non ha incluso le dipendenze. Le aggiungo manualmente...")
-        pom_content = inject_dependencies(pom_content, detected_deps)
-    
-    return pom_content
-
-def inject_dependencies(pom_content, dependencies):
-    """Inietta forzatamente le dipendenze nel pom.xml se mancano"""
-    deps_xml = "    <dependencies>\n"
-    for dep in dependencies:
-        deps_xml += "        <dependency>\n"
-        deps_xml += f"            <groupId>{dep['groupId']}</groupId>\n"
-        deps_xml += f"            <artifactId>{dep['artifactId']}</artifactId>\n"
-        deps_xml += f"            <version>{dep['version']}</version>\n"
-        if 'scope' in dep:
-            deps_xml += f"            <scope>{dep['scope']}</scope>\n"
-        deps_xml += "        </dependency>\n"
-    deps_xml += "    </dependencies>\n\n"
-    
-    # Inserisci le dipendenze prima di <build>
-    if '<build>' in pom_content:
-        pom_content = pom_content.replace('<build>', deps_xml + '    <build>')
-    else:
-        # Inserisci prima di </project>
-        pom_content = pom_content.replace('</project>', deps_xml + '</project>')
     
     return pom_content
 
@@ -332,11 +236,51 @@ def build_jar(project_dir):
     
     if result.returncode == 0:
         print("✅ JAR creato con successo!")
+        # Mostra anche l'output di successo se verbose
+        if result.stdout:
+            print("\n📋 Output Maven:")
+            print(result.stdout)
         return True
     else:
         print("❌ Errore durante la compilazione:")
-        print(result.stderr)
+        # Mostra sia stderr che stdout per avere tutti i dettagli
+        if result.stderr:
+            print("\n🔴 Errori:")
+            print(result.stderr)
+        if result.stdout:
+            print("\n📋 Output completo Maven:")
+            print(result.stdout)
         return False
+
+# <<< INSERISCI QUI LA NUOVA FUNZIONE
+
+def stampa_albero_directory(root_dir, prefix=""):
+    """Stampa una rappresentazione ad albero della directory specificata."""
+    # Pathlib per gestire i percorsi in modo moderno
+    from pathlib import Path
+    
+    path = Path(root_dir)
+    if not path.is_dir():
+        print(f"Errore: {root_dir} non è una directory valida.")
+        return
+
+    # Ottieni la lista di file/cartelle e ordinali
+    items = sorted(list(path.iterdir()))
+    
+    for i, item in enumerate(items):
+        # Determina il connettore da usare per l'albero
+        if i == len(items) - 1:
+            connector = "  └── "
+            new_prefix = prefix + "    "
+        else:
+            connector = "  ├── "
+            new_prefix = prefix + "  │   "
+            
+        print(f"    {prefix}{connector}{item.name}")
+        
+        # Se è una directory, chiama la funzione ricorsivamente
+        if item.is_dir():
+            stampa_albero_directory(item, prefix=new_prefix)
 
 def main():
     parser = argparse.ArgumentParser(description='Automatizza la conversione di un file Java in JAR usando Maven')
@@ -387,7 +331,8 @@ def main():
     print("\n5️⃣ Compilazione e creazione JAR con Maven...")
     if build_jar(project_dir):
         # Cerca i JAR generati nella directory del progetto
-        jar_files = list(project_dir.glob("*.jar"))
+        print(f"{project_dir} contiene i JAR generati:")
+        jar_files = list(Path('.').glob("*.jar"))
         
         if jar_files:
             print(f"\n✨ Completato! I JAR sono stati creati:")
@@ -410,6 +355,10 @@ def main():
     else:
         print("\n❌ Compilazione fallita. Controlla gli errori sopra.")
         sys.exit(1)
+    
+    # Alberto della directory
+    # print("   🌳 Albero della directory creato:")
+    # stampa_albero_directory(".")
 
 if __name__ == "__main__":
     main()
