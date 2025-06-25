@@ -1,53 +1,133 @@
 # COBOL to Java Converter
 
-Un sistema automatizzato per convertire programmi COBOL con interazioni database SQL in applicazioni Java moderne utilizzando l'intelligenza artificiale di Google Gemini.
+Un sistema completo per la conversione automatizzata di programmi COBOL legacy con interazioni database SQL in applicazioni Java moderne, utilizzando l'intelligenza artificiale di Google Gemini.
 
-## 🎯 Panoramica
+## Indice
+- [Panoramica](#panoramica)
+- [Architettura del Sistema](#architettura-del-sistema)
+  - [Translator_GenAI.py](#translator_genaipython)
+  - [java_to_jar.py](#java_to_jarpython)
+  - [run_conversion.py](#run_conversionpython)
+- [Prerequisiti](#prerequisiti)
+  - [Dipendenze Python](#dipendenze-python)
+  - [Dipendenze Java](#dipendenze-java)
+- [Struttura Directory](#struttura-directory)
+- [Guida all'Utilizzo](#guida-allutilizzo)
+  - [Preparazione dei File di Input](#1-preparazione-dei-file-di-input)
+  - [Esecuzione della Conversione](#2-esecuzione-della-conversione)
+  - [Output Generato](#3-output-generato)
+  - [Esecuzione del Programma Java](#4-esecuzione-del-programma-java)
+- [Processo di Conversione Dettagliato](#processo-di-conversione-dettagliato)
+  - [Preparazione](#1-preparazione)
+  - [Traduzione COBOL → Java](#2-traduzione-cobol--java)
+  - [Generazione Progetto Maven](#3-generazione-progetto-maven)
+  - [Compilazione e Packaging](#4-compilazione-e-packaging)
+- [Progetti Convertiti](#progetti-convertiti)
+  - [Sistema Bancario](#bank_system_cobol---sistema-di-gestione-conti-bancari)
+  - [Sistema Paghe](#payroll_system_cobol---sistema-di-gestione-paghe)
+  - [Sistema Magazzino](#warehouse_system_cobol---sistema-di-gestione-magazzino)
+- [Risoluzione Problemi](#risoluzione-problemi)
+  - [File di Input](#errori-comuni-e-soluzioni)
+  - [Errori API](#errori-comuni-e-soluzioni)
+  - [Errori Compilazione](#errori-comuni-e-soluzioni)
+  - [Errori Runtime](#errori-comuni-e-soluzioni)
+- [Note Tecniche](#note-tecniche)
+  - [Limiti della Conversione](#limiti-della-conversione)
+    - [Complessità del Codice COBOL](#complessità-del-codice-cobol)
+    - [Limitazioni nella Traduzione](#limitazioni-nella-traduzione)
+  - [Sicurezza e Credenziali](#sicurezza-e-gestione-delle-credenziali)
+    - [API Key e Credenziali](#api-key-e-credenziali)
+    - [Gestione Connessioni](#gestione-delle-connessioni)
+  - [Estensibilità e Personalizzazione](#estensibilità-e-personalizzazione)
+    - [Estensioni Possibili](#estensioni-possibili)
+    - [Personalizzazione Maven](#personalizzazione-maven)
+  - [Best Practices Implementate](#best-practices-implementate)
+    - [Gestione del Codice](#gestione-del-codice)
+    - [Performance e Scalabilità](#performance-e-scalabilità)
+  - [Requisiti di Sistema](#requisiti-di-sistema)
+    - [Runtime](#runtime)
+    - [Storage e Memoria](#storage-e-memoria)
 
-Questo sistema traduce automaticamente codice COBOL legacy in Java moderno, gestendo:
+## Panoramica
+
+Questo sistema traduce automaticamente codice COBOL legacy in Java moderno, consentendo la migrazione di applicazioni mission-critical verso tecnologie contemporanee. Il sistema gestisce:
+
 - Conversione della logica COBOL in strutture Java idiomatiche
 - Traduzione di statement SQL embedded in JDBC
-- Creazione di progetti Maven completi
-- Generazione di JAR eseguibili con tutte le dipendenze
+- Creazione di progetti Maven completi con tutte le dipendenze necessarie
+- Generazione di JAR eseguibili pronti per il deployment
 
-## 🏗️ Architettura
+L'approccio basato su AI permette di ottenere un codice Java di alta qualità che preserva la logica di business originale, migliorando al contempo la manutenibilità e l'estensibilità.
 
-Il sistema è composto da tre moduli principali:
+## Architettura del Sistema
 
-1. **`Translator_GenAI.py`** - Traduttore COBOL → Java usando Gemini AI
-2. **`java_to_jar.py`** - Generatore di progetti Maven e JAR
-3. **`run_conversion.py`** - Orchestratore del processo completo
+Il sistema è composto dai seguenti moduli principali che operano in sequenza:
 
-## 📋 Prerequisiti
+### Translator_GenAI.py
 
-- **Python 3.7+**
-- **Java 11+** 
-- **Maven 3.6+**
+   - Traduttore COBOL → Java usando Google Gemini AI
+   - Analizza e interpreta il codice COBOL e lo schema SQL
+   - Genera classi Java semanticamente equivalenti al codice originale
+
+### java_to_jar.py
+
+   - Generatore di progetti Maven e JAR
+   - Crea la struttura standard di un progetto Maven
+   - Configura il pom.xml con le dipendenze necessarie
+   - Compila il codice e genera i file JAR
+
+### run_conversion.py
+
+   - Orchestratore dell'intero processo
+   - Gestisce input e output
+   - Coordina l'esecuzione dei moduli precedenti
+   - Offre un'interfaccia a riga di comando unificata
+
+## Prerequisiti
+
+Per utilizzare il sistema di conversione sono necessari:
+
+- **Python 3.7 o superiore**
+- **Java 11 o superiore** 
+- **Maven 3.6 o superiore**
 - **API Key di Google Gemini** (già configurata nel codice)
-- Libreria Python: `google-generativeai`
+- **Connessione Internet** (per l'interazione con l'API Gemini)
 
-### Installazione dipendenze Python
+### Dipendenze Python
+La libreria richiesta può essere installata con pip:
 
 ```bash
 pip install google-generativeai
 ```
 
-## 📁 Struttura Directory
+### Dipendenze Java
+Il sistema genera progetti Java che utilizzano le seguenti dipendenze:
+- PostgreSQL JDBC Driver (per l'interazione con database)
+- Java Runtime Environment (JRE) per l'esecuzione dei JAR generati
+
+## Struttura Directory
 
 ```
 cobol-to-java-converter/
-├── input/                  # Directory per i file di input
-│   ├── file.cbl           # File COBOL sorgente
-│   └── schema.sql         # Schema database SQL
-├── output/                 # Directory per file intermedi
-├── Translator_GenAI.py     # Traduttore AI
-├── java_to_jar.py         # Generatore Maven/JAR
-└── run_conversion.py      # Script principale
+├── input/                         # Directory per i file di input
+│   ├── file.cbl                   # File COBOL sorgente
+│   └── schema.sql                 # Schema database SQL
+├── output/                        # Directory per file intermedi
+├── archived/                      # Progetti convertiti archiviati
+│   ├── bank_system_cobol/         # Esempio di progetto convertito (banca)
+│   ├── payroll_system_cobol/      # Esempio di progetto convertito (paghe)
+│   ├── payroll_system_cobol_F/    # Esempio di progetto convertito (paghe) Fallito
+│   ├── warehouse_system_cobol/    # Esempio di progetto convertito (magazzino)
+│   ├── warehouse_system_cobol_F1/ # Esempio di progetto convertito (magazzino) Fallito
+│   └── warehouse_system_cobol_F2/ # Esempio di progetto convertito (magazzino) Fallito
+├── translator_GenAI.py            # Traduttore AI
+├── java_to_jar.py                 # Generatore Maven/JAR
+└── run_conversion.py              # Script principale
 ```
 
-## 🚀 Come Usare il Sistema
+## Guida all'Utilizzo
 
-### 1. Preparazione dei File
+### 1. Preparazione dei File di Input
 
 Inserisci nella cartella `input/`:
 - **Un file COBOL** (estensione `.cbl` o `.cob`)
@@ -63,7 +143,7 @@ Esegui il comando principale:
 python run_conversion.py
 ```
 
-Opzionalmente, puoi specificare un nome personalizzato per il progetto:
+Per specificare un nome personalizzato per il progetto:
 
 ```bash
 python run_conversion.py --project-name MioProgetto
@@ -71,107 +151,161 @@ python run_conversion.py --project-name MioProgetto
 
 ### 3. Output Generato
 
-Il sistema creerà:
+Il sistema creerà una directory con il nome del progetto contenente:
+
 ```
 nome-progetto/
-├── src/main/java/com/      # Codice Java tradotto
-├── input/                  # Copia dei file originali
-├── pom.xml                 # Configurazione Maven
-├── NomeClasse-1.0.0.jar    # JAR semplice
-└── NomeClasse-1.0.0-jar-with-dependencies.jar  # JAR eseguibile
+├── src/main/java/com/                         # Codice Java tradotto
+├── src/main/resources/                        # Risorse del progetto
+├── src/test/java/                             # Directory per test unitari
+├── input/                                     # Copia dei file originali
+├── pom.xml                                    # Configurazione Maven
+├── NomeClasse-1.0.0.jar                       # JAR semplice
+└── NomeClasse-1.0.0-jar-with-dependencies.jar # JAR eseguibile con dipendenze
 ```
 
-## 🎮 Esecuzione del Programma Java
+### 4. Esecuzione del Programma Java
 
-Dopo la conversione:
+Per eseguire l'applicazione Java convertita:
 
 ```bash
 cd nome-progetto
 java -jar NomeClasse-1.0.0-jar-with-dependencies.jar
 ```
 
-## 🔧 Funzionalità Chiave
+## Processo di Conversione Dettagliato
 
-### Traduzione COBOL → Java
-- Conversione di `WORKING-STORAGE` in variabili di istanza Java
-- Traduzione di `PARAGRAPH` in metodi Java
-- Mappatura dei tipi di dato COBOL ai tipi Java appropriati
-- Gestione di `BigDecimal` per valori monetari
+1. **Preparazione**
+   - Lo script `run_conversion.py` verifica la presenza dei file di input necessari
+   - Crea la directory di output se non esiste
 
-### Gestione SQL
-- Conversione di `EXEC SQL` in JDBC `PreparedStatement`
-- Gestione automatica di transazioni con commit/rollback
-- Supporto per cursori SQL
-- Gestione corretta dei valori NULL
+2. **Traduzione COBOL → Java**
+   - `translator_GenAI.py` analizza il codice COBOL e lo schema SQL
+   - Utilizza l'API Gemini per generare il codice Java equivalente
+   - Applica trasformazioni intelligenti preservando la logica di business
 
-### Configurazione Database
-Il sistema configura automaticamente la connessione PostgreSQL:
-- URL: `jdbc:postgresql://localhost:5432/[nome_database]`
-- User: `postgres`
-- Password: `password`
+3. **Generazione Progetto Maven**
+   - `java_to_jar.py` crea la struttura standard del progetto Maven
+   - Genera un file `pom.xml` configurato con le dipendenze necessarie
+   - Copia i file di input nella cartella del progetto per riferimento
 
-## 📝 Esempio di Conversione
+4. **Compilazione e Packaging**
+   - Invoca Maven per compilare il codice Java
+   - Genera due tipi di JAR:
+     - JAR standard (`.jar`)
+     - JAR eseguibile con tutte le dipendenze incluse (`-jar-with-dependencies.jar`)
 
-**COBOL Input:**
-```cobol
-EXEC SQL
-    SELECT NOME, SALDO 
-    INTO :WS-NOME, :WS-SALDO
-    FROM CLIENTI
-    WHERE ID = :WS-ID
-END-EXEC.
-```
+## Progetti Convertiti
 
-**Java Output:**
-```java
-try (PreparedStatement stmt = connection.prepareStatement(
-    "SELECT NOME, SALDO FROM CLIENTI WHERE ID = ?")) {
-    stmt.setString(1, wsId);
-    ResultSet rs = stmt.executeQuery();
-    if (rs.next()) {
-        wsNome = rs.getString("NOME");
-        wsSaldo = rs.getBigDecimal("SALDO");
-    }
-}
-```
+Nella directory `archived/` sono disponibili esempi di progetti già convertiti:
 
-## 🛠️ Personalizzazione
+1. **bank_system_cobol** - Sistema di gestione conti bancari
+   - Gestione clienti e conti
+   - Operazioni di deposito/prelievo
+   - Generazione estratti conto
 
-### API Key Gemini
-L'API key è già configurata nei file. Per usare la tua chiave, modifica la variabile `API_KEY` in:
-- `Translator_GenAI.py`
-- `java_to_jar.py`
+2. **payroll_system_cobol** - Sistema di gestione paghe
+   - Calcolo stipendi e contributi
+   - Gestione dipendenti
+   - Generazione buste paga
 
-### Configurazione Database
-Per modificare i parametri di connessione, edita la sezione di configurazione in `Translator_GenAI.py`.
+3. **warehouse_system_cobol** - Sistema di gestione magazzino
+   - Inventario prodotti
+   - Gestione ordini e fornitori
+   - Monitoraggio giacenze
 
-## ⚠️ Limitazioni
+Questi progetti possono essere usati come riferimento per comprendere il processo di conversione e il risultato finale.
 
-- Supporta solo PostgreSQL (estendibile ad altri DB)
-- Richiede che il codice COBOL sia ben strutturato
-- La qualità della traduzione dipende dalla complessità del codice sorgente
-- Non gestisce automaticamente stored procedures o trigger
+## Risoluzione Problemi
 
-## 🐛 Troubleshooting
+### Errori Comuni e Soluzioni
 
-**Errore: "Più file COBOL/SQL trovati"**
-- Assicurati di avere solo un file `.cbl` e un file `.sql` nella cartella `input/`
+1. **File di input non trovati**
+   - Verifica che nella cartella `input/` ci sia esattamente un file COBOL e un file SQL
+   - Controlla che le estensioni siano corrette (`.cbl`/`.cob` e `.sql`)
 
-**Errore di compilazione Maven**
-- Verifica che Java e Maven siano installati correttamente
-- Controlla che il codice Java generato non abbia errori di sintassi
+2. **Errori di connessione API**
+   - Verifica la connessione Internet
+   - Controlla che l'API key di Gemini sia valida
 
-**Errore di connessione database**
-- Verifica che PostgreSQL sia in esecuzione
-- Controlla le credenziali di accesso nel codice generato
+3. **Errori di compilazione Java**
+   - Esamina i log di Maven per identificare problemi specifici
+   - Assicurati che sia stato inserito il package statement nel codice Java generato
+   - Assicuratiche il codice Java generato non abbia commenti non validi lasciati da Gemini
 
-## 📄 Note
+4. **Errori in fase di esecuzione**
+   - Controlla la disponibilità del database PostgreSQL
+   - Verifica le credenziali di connessione al database
 
-Il sistema utilizza Google Gemini AI per l'analisi e la traduzione del codice. La qualità della traduzione può variare in base alla complessità del codice COBOL originale. Si consiglia sempre di rivedere e testare il codice Java generato prima dell'uso in produzione.
+## Note Tecniche
 
-- [ ] -- api key non esplicita
-- [ ] -- readme
-- [ ] -- gestione di quando non funziona
-- [ ] -- doppia cartella input
-- [ ] -- cartella creata automaticamente non va in output
-- [ ] -- con un modello minore, funziona?
+### Limiti della Conversione
+- **Complessità del Codice COBOL**
+  - Codice COBOL altamente specializzato potrebbe richiedere aggiustamenti manuali
+  - La conversione è ottimizzata per COBOL strutturato; codice con molti GOTO richiede revisione
+  - Statement COBOL non standard o specifici del vendor potrebbero non essere riconosciuti
+  - Codice che utilizza feature mainframe-specifiche richiede riscrittura manuale
+
+- **Limitazioni nella Traduzione**
+  - La gestione delle eccezioni COBOL (ON SIZE ERROR, etc.) viene mappata su try-catch Java
+  - Le variabili di gruppo COBOL vengono convertite in classi Java separate
+  - I REDEFINES vengono gestiti tramite metodi di conversione espliciti
+  - Le prestazioni potrebbero differire tra COBOL e Java per operazioni numeriche di precisione
+
+### Sicurezza e Gestione delle Credenziali
+- **API Key e Credenziali**
+  - L'API key di Gemini è hard-coded per semplicità (da modificare in produzione)
+  - Credenziali database (user="postgres", password="password") sono predefinite
+  - In produzione, utilizzare:
+    ```java
+    DB_URL = System.getenv("DB_URL");
+    DB_USER = System.getenv("DB_USER");
+    DB_PASSWORD = System.getenv("DB_PASSWORD");
+    ```
+
+- **Gestione delle Connessioni**
+  - Utilizzo obbligatorio di PreparedStatement per prevenire SQL injection
+  - Gestione automatica della chiusura delle risorse con try-with-resources
+  - Implementazione di connection pooling consigliata per deployment
+
+### Estensibilità e Personalizzazione
+- **Estensioni Possibili**
+  - Supporto per altri target language (Python, C#)
+  - Integrazione con altri framework Java (Spring, JPA)
+  - Aggiunta di generazione test unitari automatici
+  - Supporto per altri dialetti COBOL modificando il prompt
+
+- **Personalizzazione Maven**
+  - Configurazione dependencies in pom.xml
+  - Modifica delle fasi di build
+  - Aggiunta plugin per qualità codice
+  - Customizzazione target Java version
+
+### Best Practices Implementate
+- **Gestione del Codice**
+  - Ogni paragrafo COBOL diventa un metodo Java privato
+  - Nomi variabili convertiti in camelCase
+  - JavaDoc generato dai commenti COBOL
+  - Gestione appropriata delle eccezioni SQL
+
+- **Performance e Scalabilità**
+  - Uso di StringBuilder per manipolazione stringhe
+  - PreparedStatement cachati quando possibile
+  - Transazioni ottimizzate per batch operation
+  - Connection pooling ready
+
+### Requisiti di Sistema
+- **Runtime**
+  - JRE 11+ per supporto BigDecimal avanzato
+  - PostgreSQL 12+ per feature SQL moderne
+  - Python 3.7+ per script di conversione
+  - Maven 3.6+ per build system
+
+- **Storage e Memoria**
+  - 2GB RAM minimo consigliato per Gemini API
+  - Spazio disco proporzionale al codice sorgente
+  - Cache Maven locale per dipendenze
+
+---
+
+**Data ultima revisione**: 25 giugno 2025

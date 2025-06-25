@@ -46,8 +46,8 @@ def translate_cobol_to_java_with_jdbc(cobol_code, sql_schema=None):
     generation_config = {
         "temperature": 0.1,
         "top_p": 0.9,
-        "top_k": 30,
-        "max_output_tokens": 30000,
+        "top_k": 20,
+        "max_output_tokens": 25000,
         "response_mime_type": "text/plain",
     }
     
@@ -169,6 +169,17 @@ Sei un compilatore avanzato e un traduttore di codice sorgente da COBOL a Java. 
    * Aggiungi JavaDoc chiari per la classe e per i metodi principali.
    * Il file `.java` generato deve essere compilabile ed eseguibile con driver PostgreSQL JDBC nel classpath.
    * Gestisci correttamente le eccezioni SQL con try-catch appropriati.
+
+10. **Verifica Finale OBBLIGATORIA:**
+   * Prima di concludere, esegui un controllo completo del codice generato:
+     - Verifica che non ci sia testo non commentato
+     - Verifica che tutti i statement SQL utilizzino PreparedStatement con parametri posizionali
+     - Controlla che ogni PreparedStatement venga chiuso correttamente (preferibilmente con try-with-resources)
+     - Assicurati che tutte le variabili siano inizializzate prima dell'uso
+     - Verifica che la gestione delle transazioni sia corretta (commit/rollback)
+     - Controlla che tutti i tipi di dati SQL vengano gestiti correttamente, in particolare NULL e tipi numerici
+     - Assicurati che il codice sia completo e pronto per essere compilato senza modifiche manuali
+     - Verifica che il metodo main() sia presente e chiami correttamente mainLogic()
 
 Procedi con la traduzione completa includendo l'implementazione JDBC reale per tutte le operazioni SQL.
 """
