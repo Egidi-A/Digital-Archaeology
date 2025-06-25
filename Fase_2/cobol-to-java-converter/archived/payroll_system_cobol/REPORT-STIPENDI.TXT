@@ -1,0 +1,53 @@
+REPORT STIPENDI - 05/2025
+========================================================================
+Dipendenti elaborati: 43
+Totale lordo:            € 96.715,05
+Totale trattenute:       € 31.894,14
+Totale netto:            € 64.820,92
+------------------------------------------------------------------------
+DETTAGLIO PER DIPENDENTE:
+Matr.    Cognome              Nome                        Lordo        Netto
+------------------------------------------------------------------------
+EMP001   Rossi                Mario                     1800,00      1364,95
+EMP002   Bianchi              Anna                      2372,73      1471,09
+EMP003   Verde                Luigi                     1527,27      1023,27
+EMP004   Neri                 Giulia                    2275,00      1456,00
+EMP005   Gialli               Franco                    3700,00      2220,00
+EMP006   Fontana              Alessia                   1909,09      1240,91
+EMP007   Bruno                Davide                    1799,86      1187,91
+EMP008   Galli                Chiara                    1813,64      1178,86
+EMP009   Conti                Simone                    1500,00      1020,00
+EMP010   Ricci                Martina                   1500,00      1005,00
+EMP011   Moretti              Lorenzo                   2132,51      1492,76
+EMP012   Barbieri             Sofia                     2777,11      1805,12
+EMP013   Lombardi             Gabriele                  2464,58      1725,21
+EMP014   Greco                Alice                     2056,02      1439,21
+EMP016   Serra                Beatrice                  1719,88      1203,92
+EMP017   Rinaldi              Tommaso                   2118,91      1483,24
+EMP018   Colombo              Caterina                  2895,49      1882,07
+EMP019   Ferrari              Edoardo                   1457,78      1093,34
+EMP021   Romano               Leonardo                  1182,21       886,66
+EMP022   Conti                Aurora                    2928,22      1903,34
+EMP023   Ricci                Filippo                   2576,98      1675,04
+EMP024   Moretti              Ginevra                   2157,74      1510,42
+EMP025   Barbieri             Samuele                   1972,33      1380,63
+EMP026   Lombardi             Noemi                     1849,80      1294,86
+EMP027   Greco                Christian                 3162,42      2055,57
+EMP028   Marino               Rebecca                   2265,22      1585,65
+EMP029   Serra                Diego                     1844,16      1290,91
+EMP030   Rinaldi              Emma                      1681,87      1177,31
+EMP031   Colombo              Alessio                   3999,87      2399,92
+EMP032   Ferrari              Nicole                    2454,12      1717,88
+EMP033   Esposito             Daniel                    2549,23      1657,00
+EMP034   Romano               Isabel                    2848,94      1851,81
+EMP035   Conti                Kevin                     1764,22      1234,95
+EMP036   Ricci                Megan                     2292,87      1605,01
+EMP037   Moretti              Brian                     1926,24      1348,37
+EMP038   Barbieri             Jessica                   3614,36      2168,62
+EMP039   Lombardi             Jason                     2690,62      1748,90
+EMP040   Greco                Emily                     1795,22      1256,65
+EMP041   Marino               Ryan                      1765,65      1235,96
+EMP042   Serra                Chloe                     1943,58      1360,51
+EMP043   Rinaldi              Ethan                     2425,80      1698,06
+EMP044   Colombo              Grace                     2034,84      1424,39
+EMP045   Ferrari              Logan                     3168,67      2059,64

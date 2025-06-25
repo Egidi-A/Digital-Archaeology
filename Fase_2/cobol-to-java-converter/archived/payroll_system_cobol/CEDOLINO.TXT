@@ -1,0 +1,23 @@
+                    CEDOLINO PAGA
+========================================================================
+AZIENDA: ESEMPIO SPA                    Periodo: 05/2025
+------------------------------------------------------------------------
+Dipendente: Neri Giulia
+Matricola: EMP004    C.F.: NRIGLI90D55H501W
+Qualifica: Programmatore           Livello: 3B
+------------------------------------------------------------------------
+
+COMPETENZE:
+  Stipendio base..............      € 2.200,00
+
+TRATTENUTE:
+  Addizionale Comunale IRPEF...         € 18,20
+  Addizionale Regionale IRPEF...         € 39,36
+  Contributo IVS Dipendente...        € 209,07
+  Imposta Reddito Persone Fisiche...        € 526,94
+------------------------------------------------------------------------
+TOTALE LORDO.................      € 2.275,00
+TOTALE TRATTENUTE............        € 819,00
+------------------------------------------------------------------------
+NETTO A PAGARE...............      € 1.456,00
+========================================================================

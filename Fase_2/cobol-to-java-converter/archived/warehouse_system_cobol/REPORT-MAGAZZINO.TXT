@@ -1,0 +1,28 @@
+REPORT VALORIZZAZIONE MAGAZZINO
+===============================
+Data: 2025-06-25    Ora: 13:04:03
+
+ART0000001 Resistenza 10K Ohm 1/4W                 
+  Qtà:   5.000,00 PZ     Val.medio:         0,02  Totale: EUR          100,00
+ART0000002 Condensatore 100uF 25V                  
+  Qtà:   1.470,00 PZ     Val.medio:         0,15  Totale: EUR          220,50
+ART0000003 LED Rosso 5mm                           
+  Qtà:   5.000,00 PZ     Val.medio:         0,10  Totale: EUR          500,00
+ART0000004 Vite M3x10 Acciaio                      
+  Qtà:  15.000,00 PZ     Val.medio:         0,01  Totale: EUR          150,00
+ART0000005 Dado M3 Acciaio                         
+  Qtà:  15.000,00 PZ     Val.medio:         0,01  Totale: EUR          150,00
+ART0000006 Guanti Nitrile L                        
+  Qtà:      25,00 CF     Val.medio:         8,50  Totale: EUR          212,50
+ART0000007 Cacciavite Phillips PH2                 
+  Qtà:      12,00 PZ     Val.medio:         5,50  Totale: EUR           66,00
+ART0000008 Multimetro Digitale                     
+  Qtà:       3,00 PZ     Val.medio:        35,00  Totale: EUR          105,00
+ART0000009 Stagno 60/40 1mm 100g                   
+  Qtà:      25,00 PZ     Val.medio:        12,00  Totale: EUR          300,00
+ART0000010 Breadboard 830 punti                    
+  Qtà:      55,00 PZ     Val.medio:         4,50  Totale: EUR          247,50
+
+-------------------------------
+Articoli valorizzati: 10
+VALORE TOTALE MAGAZZINO: EUR 2.051,50
